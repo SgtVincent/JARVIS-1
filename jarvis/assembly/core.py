@@ -59,7 +59,8 @@ def get_skill(task, info):
     print("query: ", query)
     
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        # model="gpt-3.5-turbo",
+        model="qwen-turbo",
         messages=[
             {
                 "role": "system",
