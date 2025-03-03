@@ -43,7 +43,7 @@ def parse_action_index(text):
     # Return None if "Action:" is not found
     return None
 
-def get_skill(task, info):
+def get_skill(task, info, llm_model="gpt-3.5-turbo"):
     skill_content = ""
     if task not in skills.keys():
         return {
@@ -59,8 +59,7 @@ def get_skill(task, info):
     print("query: ", query)
     
     response = client.chat.completions.create(
-        # model="gpt-3.5-turbo",
-        model="qwen-turbo",
+        model=llm_model,
         messages=[
             {
                 "role": "system",
