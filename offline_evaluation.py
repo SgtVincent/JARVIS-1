@@ -100,40 +100,40 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
 # for single task evaluate
 def evaluate_single_task(args, task_name):
-        task_config_dict = get_task_config(task_name)
-        
-        ### modify original config to fit paper setting ###
-        if args.appointed_biome:
-            task_config_dict['env']['biome'] = random.choice(args.appointed_biome)
+    task_config_dict = get_task_config(task_name)
+    
+    ### modify original config to fit paper setting ###
+    if args.appointed_biome:
+        task_config_dict['env']['biome'] = random.choice(args.appointed_biome)
 
-        if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
-            task_config_dict['env']['init_inventory']={
-                "iron_axe": 1
-            }
-        ###################################################
-        
-        task_env_setting = task_config_dict['env']
-        task_env_yaml = build_env_yaml(task_env_setting)
-        if task_config_dict['task'] in memory.keys():
-            rprint(f"[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
-            task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
-        else:
-            rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
-            rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}>!")
-            # FIXME: generate plan for task 
-            raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
+    if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
+        task_config_dict['env']['init_inventory']={
+            "iron_axe": 1
+        }
+    ###################################################
+    
+    task_env_setting = task_config_dict['env']
+    task_env_yaml = build_env_yaml(task_env_setting)
+    if task_config_dict['task'] in memory.keys():
+        rprint(f"[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
+        task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
+    else:
+        rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
+        rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}>!")
+        # FIXME: generate plan for task 
+        raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
 
-        env = MinecraftWrapper("demo")
-        env = RenderWrapper(env)
-        env.reset()
-        env.maximum_step = 1200*args.time - 1
-        
-        mark = MarkI(env=env)
-        mark.reset()
+    env = MinecraftWrapper("demo")
+    env = RenderWrapper(env)
+    env.reset()
+    env.maximum_step = 1200*args.time - 1
+    
+    mark = MarkI(env=env)
+    mark.reset()
 
-        mark.env_yaml = task_env_yaml
-        task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
-        return task_res, msg
+    mark.env_yaml = task_env_yaml
+    task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
+    return task_res, msg
 
 if __name__ == '__main__':
 
