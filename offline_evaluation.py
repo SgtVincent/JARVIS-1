@@ -16,7 +16,7 @@ from functools import partial
 
 from rich import print as rprint
 
-def execute(agent, goal):
+def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
     assert goal_type in ["mine", "craft", "smelt"], f"subgoal type {goal_type} is not supported"
 
@@ -24,7 +24,7 @@ def execute(agent, goal):
     goal_target_num = list(goal["goal"].values())[0]
 
     if goal_type == 'mine':
-        skill = get_skill(goal_target, agent.record_infos[-1])
+        skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
         if "timeout" in goal.keys():
             timeout = goal["timeout"]
         else:
@@ -44,7 +44,7 @@ def execute(agent, goal):
     return ret_flag, ret_info
 
 
-def evaluate_task(env, mark, task_dict):
+def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     
     env.reset()
     mark.reset()
@@ -73,7 +73,7 @@ def evaluate_task(env, mark, task_dict):
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info = mark.record_infos[-1])
         while not goal_obj_ret:
-            ret_flag, ret_info = execute(mark, subgoal)
+            ret_flag, ret_info = execute(mark, subgoal, llm_model)
             rprint(f"[{datetime.now()}] Executation Flag: {ret_flag} Information: {ret_info}")
 
             goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info = mark.record_infos[-1])
@@ -101,9 +101,24 @@ if __name__ == '__main__':
     parser.add_argument("-time", "--time", type=int, default=10, help="evaluation time(mins) for task")
     parser.add_argument("-dynamic", "--dynamic", type=bool, default=True, help="dynamic environment or not")
     parser.add_argument("-mode", "--evaluation_mode", type=str, default="offline", help="online or offline evaluation mode")
+    
+    ############# Newly add args #################
+    parser.add_argument(
+        "--tasks_list", type=list, 
+        default=["crafting_table", "wooden_pickaxe","stone_pickaxe","iron_pickaxe","diamond"], 
+        help="evaluation tasks name list"
+    )
+    parser.add_argument(
+        "--llm_type", type=str, 
+        default="qwen-turbo", 
+        help="LLM used for evaluation"
+    )
+    ################################
+
     args = parser.parse_args()
 
     assert args.evaluation_mode == "offline", "Only support offline evaluation mode now!"
+    print(f"Using LLM: {args.llm_type}")
 
     task_name = args.task_name
     task_config_dict = get_task_config(task_name)
@@ -129,5 +144,5 @@ if __name__ == '__main__':
 
 
     mark.env_yaml = task_env_yaml
-    task_res, msg = evaluate_task(env, mark, task_config_dict)
+    task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
     
