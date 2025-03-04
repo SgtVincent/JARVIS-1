@@ -39,7 +39,10 @@ def parse_action_index(text):
         if line.startswith("Action:"):
             # Extract the number following "Action:"
             action_index = line.split("Action:")[1].strip()
-            return int(action_index)
+            try:
+                return int(action_index)
+            except:
+                return None # Return None if "Action: xxx" is not action index
     # Return None if "Action:" is not found
     return None
 
