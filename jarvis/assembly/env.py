@@ -45,6 +45,9 @@ from jarvis.assets import SPAWN_FILE
 with open(SPAWN_FILE, 'r') as f:
     spawn = json.load(f)
 
+# Ensure reproducibility
+random.seed(42)
+
 seeds = {}
 for s in spawn:
     if s['biome'] not in seeds.keys():
