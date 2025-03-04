@@ -108,8 +108,13 @@ def evaluate_single_task(args, task_name):
 
     if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
         task_config_dict['env']['init_inventory']={
-            "iron_axe": 1
+             0: {
+                "type": "iron_axe",
+                "quantity": 1
+            }
         }
+    else:
+        task_config_dict['env']['init_inventory']= {}
     ###################################################
     
     task_env_setting = task_config_dict['env']

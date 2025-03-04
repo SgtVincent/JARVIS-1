@@ -71,6 +71,7 @@ def build_env_yaml(env_config):
         env_yaml['summon_mobs'] = env_config["mobs"]
 
     # init_inventory -> init_inventory
+    env_yaml['init_inventory'] = {}
     if env_config["init_inventory"]:
         for k,v in env_config["init_inventory"].items():
             env_yaml['init_inventory'][k] = v
