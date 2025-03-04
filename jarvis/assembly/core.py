@@ -102,7 +102,7 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo"):
     )
     print(response.choices[0].message.content)
     action_index = parse_action_index(response.choices[0].message.content)
-    if not action_index:
+    if not action_index or action_index > len( skills[task]): # if no action or action beyond task skills
         return random.choice(skills[task])
     return skills[task][action_index-1]
 
