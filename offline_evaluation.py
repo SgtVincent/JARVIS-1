@@ -17,6 +17,9 @@ from functools import partial
 from rich import print as rprint
 from collections import defaultdict
 
+# Ensure reproducibility
+random.seed(42)
+
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
     assert goal_type in ["mine", "craft", "smelt"], f"subgoal type {goal_type} is not supported"
@@ -98,6 +101,17 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 # for single task evaluate
 def evaluate_single_task(args, task_name):
         task_config_dict = get_task_config(task_name)
+        
+        ### modify original config to fit paper setting ###
+        if args.appointed_biome:
+            task_config_dict['env']['biome'] = random.choice(args.appointed_biome)
+
+        if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
+            task_config_dict['env']['init_inventory']={
+                "iron_axe": 1
+            }
+        ###################################################
+        
         task_env_setting = task_config_dict['env']
         task_env_yaml = build_env_yaml(task_env_setting)
         if task_config_dict['task'] in memory.keys():
@@ -132,8 +146,18 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list, 
-        default=["crafting_table", "wooden_pickaxe","stone_pickaxe","iron_pickaxe","diamond"], 
-        help="evaluation tasks name list"
+        default=[
+            ("crafting_table", 68), 
+            ("wooden_pickaxe", 62),
+            ("stone_pickaxe", 68),
+            ("iron_pickaxe", 68),
+            ("diamond", 728)], 
+        help="evaluation (tasks_name, times) list"
+    )
+    parser.add_argument(
+        "--appointed_biome", type=list, 
+        default=["plains", "forest"], 
+        help="biome used for evaluation, overwrite the task.json"
     )
     parser.add_argument(
         "--llm_type", type=str, 
@@ -152,14 +176,19 @@ if __name__ == '__main__':
     # task_res, msg = evaluate_single_task(args, args.task_name)
 
     # eval for list of task
-    result_dict = defaultdict(list)
-    for task_name in args.tasks_list:
-        task_res, msg = evaluate_single_task(args, task_name)
-        result_dict[task_name].append((task_res, msg))
-
-    for task_name in result_dict.keys():
-        print(f"Task name: {task_name}")
-        results_list = result_dict[task_name]
-        success = len([x for x in results_list if x[0] is True])
-        total = len(results_list)
-        print(f"success / total = {success} / {total} = {round(success/total, 4)}")
+    final_results = []
+    for (task_name, eval_times) in args.tasks_list:
+        success = 0
+        total = 0
+        for _ in range(eval_times):
+            task_res, msg = evaluate_single_task(args, task_name)
+            total += 1
+            if task_res:
+                success += 1
+        text_result = f"Task {task_name}: \n\tsuccess / total = {success} / {total} = {round(success/total, 4)}"
+        print(text_result)    
+        final_results.append(text_result)
+    
+    # reprint all tasks' eval results
+    for rst in final_results:
+        print(rst)
