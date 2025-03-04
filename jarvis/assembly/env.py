@@ -75,7 +75,7 @@ def build_env_yaml(env_config):
         for k,v in env_config["init_inventory"].items():
             env_yaml['init_inventory'][k] = v
 
-    with open(ENV_CONFIG_DIR / "demo.yaml", 'w') as f:
+    with open(ENV_CONFIG_DIR / "tmp.yaml", 'w') as f:
         yaml.dump(env_yaml, f, sort_keys=False)
     
     return env_yaml
