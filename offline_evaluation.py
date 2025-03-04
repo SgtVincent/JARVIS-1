@@ -128,8 +128,9 @@ def evaluate_single_task(args, task_name):
         # FIXME: generate plan for task 
         raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
 
-    env = MinecraftWrapper("demo")
-    env = RenderWrapper(env)
+    env = MinecraftWrapper("tmp")
+    if args.activate_gui:
+        env = RenderWrapper(env)
     env.reset()
     env.maximum_step = 1200*args.time - 1
     
@@ -143,7 +144,7 @@ def evaluate_single_task(args, task_name):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Evaluate JARVIS-1 in offline mode.")
-    parser.add_argument("-task", "--task_name", type=str, default="iron_pickaxe", help="evaluation task name")
+    parser.add_argument("-task", "--task_name", type=tuple, default=("iron_pickaxe", 1), help="evaluation task name, times")
     parser.add_argument("-time", "--time", type=int, default=10, help="evaluation time(mins) for task")
     parser.add_argument("-dynamic", "--dynamic", type=bool, default=True, help="dynamic environment or not")
     parser.add_argument("-mode", "--evaluation_mode", type=str, default="offline", help="online or offline evaluation mode")
@@ -155,8 +156,8 @@ if __name__ == '__main__':
             ("crafting_table", 68), 
             ("wooden_pickaxe", 62),
             ("stone_pickaxe", 68),
-            ("iron_pickaxe", 68),
-            ("diamond", 728)], 
+            ("iron_pickaxe", 68)],
+            # ("diamond", 728)], 
         help="evaluation (tasks_name, times) list"
     )
     parser.add_argument(
@@ -169,6 +170,7 @@ if __name__ == '__main__':
         default="qwen-turbo", 
         help="LLM used for evaluation"
     )
+    parser.add_argument("--activate_gui", action="store_false", help="Disable GUI evaluation")
     ################################
 
     args = parser.parse_args()
@@ -178,7 +180,7 @@ if __name__ == '__main__':
     print(f"Using LLM: {args.llm_type}")
 
     # # original eval for single task
-    # task_res, msg = evaluate_single_task(args, args.task_name)
+    # task_res, msg = evaluate_single_task(args, args.task_name[0])
 
     # eval for list of task
     final_results = []
