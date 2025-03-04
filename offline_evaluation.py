@@ -15,6 +15,7 @@ from datetime import datetime
 from functools import partial
 
 from rich import print as rprint
+from collections import defaultdict
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
@@ -94,6 +95,32 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     
     return False, "plan_error"
 
+# for single task evaluate
+def evaluate_single_task(args, task_name):
+        task_config_dict = get_task_config(task_name)
+        task_env_setting = task_config_dict['env']
+        task_env_yaml = build_env_yaml(task_env_setting)
+        if task_config_dict['task'] in memory.keys():
+            rprint(f"[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
+            task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
+        else:
+            rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
+            rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}>!")
+            # FIXME: generate plan for task 
+            raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
+
+        env = MinecraftWrapper("demo")
+        env = RenderWrapper(env)
+        env.reset()
+        env.maximum_step = 1200*args.time - 1
+        
+        mark = MarkI(env=env)
+        mark.reset()
+
+        mark.env_yaml = task_env_yaml
+        task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
+        return task_res, msg
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Evaluate JARVIS-1 in offline mode.")
@@ -118,31 +145,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     assert args.evaluation_mode == "offline", "Only support offline evaluation mode now!"
+    
     print(f"Using LLM: {args.llm_type}")
 
-    task_name = args.task_name
-    task_config_dict = get_task_config(task_name)
-   
-    task_env_setting = task_config_dict['env']
-    task_env_yaml = build_env_yaml(task_env_setting)
-    if task_config_dict['task'] in memory.keys():
-        rprint(f"[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
-        task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
-    else:
-        rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
-        rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}>!")
-        # FIXME: generate plan for task 
-        raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
+    # # original eval for single task
+    # task_res, msg = evaluate_single_task(args, args.task_name)
 
-    env = MinecraftWrapper("demo")
-    env = RenderWrapper(env)
-    env.reset()
-    env.maximum_step = 1200*args.time - 1
-    
-    mark = MarkI(env=env)
-    mark.reset()
+    # eval for list of task
+    result_dict = defaultdict(list)
+    for task_name in args.tasks_list:
+        task_res, msg = evaluate_single_task(args, task_name)
+        result_dict[task_name].append((task_res, msg))
 
-
-    mark.env_yaml = task_env_yaml
-    task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
-    
+    for task_name in result_dict.keys():
+        print(f"Task name: {task_name}")
+        results_list = result_dict[task_name]
+        success = len([x for x in results_list if x[0] is True])
+        total = len(results_list)
+        print(f"success / total = {success} / {total} = {round(success/total, 4)}")
