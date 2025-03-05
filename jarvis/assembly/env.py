@@ -79,5 +79,5 @@ def build_env_yaml(env_config, save_config_name="tmp"):
     with open(ENV_CONFIG_DIR / f"{save_config_name}.yaml", 'w') as f:
         yaml.dump(env_yaml, f, sort_keys=False)
     
-    return save_config_name
+    return env_yaml
 
