@@ -24,8 +24,8 @@ from jarvis.arm.utils.vpt_lib.actions import ActionTransformer
 from jarvis.arm.utils.vpt_lib.action_mapping import CameraHierarchicalMapping
 
 
-ENV_CONFIG_DIR = Path(__file__).parent.parent / "global_configs" / "envs"
-RELATIVE_ENV_CONFIG_DIR = "../global_configs/envs"
+ENV_CONFIG_DIR = Path(__file__).parent.parent.parent / "lby" / "global_configs" / "envs"
+RELATIVE_ENV_CONFIG_DIR = "../../lby/global_configs/envs"
 
 
 ACTION_TRANSFORMER_KWARGS = dict(

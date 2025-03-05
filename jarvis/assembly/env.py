@@ -45,8 +45,8 @@ from jarvis.assets import SPAWN_FILE
 with open(SPAWN_FILE, 'r') as f:
     spawn = json.load(f)
 
-# Ensure reproducibility
-random.seed(42)
+# # Ensure reproducibility
+# random.seed(42)
 
 seeds = {}
 for s in spawn:
@@ -54,9 +54,9 @@ for s in spawn:
         seeds[s['biome']] = []
     seeds[s['biome']].append(s['seed'])
 
-ENV_CONFIG_DIR = Path(__file__).parent.parent / "global_configs" / "envs"
+ENV_CONFIG_DIR = Path(__file__).parent.parent.parent / "lby" / "global_configs" / "envs"
 
-def build_env_yaml(env_config):
+def build_env_yaml(env_config, save_config_name="tmp"):
     with open(ENV_CONFIG_DIR / "jarvis.yaml", 'r') as f:
         env_yaml = yaml.load(f, Loader=yaml.FullLoader)
     # biome -> seed: 12345, close_ended: True
@@ -76,8 +76,8 @@ def build_env_yaml(env_config):
         for k,v in env_config["init_inventory"].items():
             env_yaml['init_inventory'][k] = v
 
-    with open(ENV_CONFIG_DIR / "tmp.yaml", 'w') as f:
+    with open(ENV_CONFIG_DIR / f"{save_config_name}.yaml", 'w') as f:
         yaml.dump(env_yaml, f, sort_keys=False)
     
-    return env_yaml
+    return save_config_name
 
