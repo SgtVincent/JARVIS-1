@@ -1,6 +1,8 @@
 from jarvis.assembly.base import client
 from jarvis.assembly.base import skills
 import random 
+import time
+import openai
 
 def translate_task(task):
     return f"Obtain {task}"
@@ -46,7 +48,7 @@ def parse_action_index(text):
     # Return None if "Action:" is not found
     return None
 
-def get_skill(task, info, llm_model="gpt-3.5-turbo"):
+def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
     skill_content = ""
     if task not in skills.keys():
         return {
@@ -61,48 +63,56 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo"):
     query = f"Task: {translate_task(task)}.\nSkills: {skill_content}\nAgent State: {translate_inventory(info)} {translate_equipment(info)} {translate_height(info)}"
     print("query: ", query)
     
-    response = client.chat.completions.create(
-        model=llm_model,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and a set of skills to finish such task. And you need to choose a suitable skill for the agent to finish the task object.  Only choose one skill once. Output reasoning thought and the number of the skill as action. You can follow the history dialogues to make a decision."
-            },
-            {
-                "role": "user",
-                "content": "Task: Obtain iron_ore.\nSkills: 1. dig down, 2. equip stone pickaxe, 3. break stone blocks, obtain iron ore,\nAgent State: Now I have 1 stone pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the crafting_table in hand. Now I locate in height of 50."
-            },
-            {
-                "role": "assistant",
-                "content": "Thought: Mine iron ore should use the tool stone pickaxe. I have stone pickaxe in inventory. But I do not equip it now. So I should equip the stone pickaxe. \nAction: 2"
-            },
-            {
-                "role": "user",
-                "content": "Task: Obtain logs.\nSkills: 1. chop down the tree, 2. equip iron axe to chop down the tree, \nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
-            },
-            {
-                "role": "assistant",
-                "content": "Thought: Equip the iron axe will accelerate the speed to chop trees. I have an iron axe in the inventory. So I should equip the iron axe first.\nAction: 2"
-            },
-            {
-                "role": "user",
-                "content": "Task: Obtain diamond.\nSkills: 1. dig down, 2. equip iron pickaxe, 3. break stone blocks, obtain diamond\nAgent State: Now I have 1 iron pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the iron_pickaxe in hand. Now I locate in height of 30."
-            },
-            {
-                "role": "assistant",
-                "content": "Thought: Diamond in Minecraft only exists in layers under height 15 and above height 5. Now my height is 30, which does not exist diamonds. So I should dig down to lower layers.\nAction: 1"
-            },
-            {
-                "role": "user",
-                "content": query
-            }
-        ],
-        temperature=1,
-        max_tokens=256,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
+    retries = 0
+    for _ in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=llm_model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and a set of skills to finish such task. And you need to choose a suitable skill for the agent to finish the task object.  Only choose one skill once. Output reasoning thought and the number of the skill as action. You can follow the history dialogues to make a decision."
+                    },
+                    {
+                        "role": "user",
+                        "content": "Task: Obtain iron_ore.\nSkills: 1. dig down, 2. equip stone pickaxe, 3. break stone blocks, obtain iron ore,\nAgent State: Now I have 1 stone pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the crafting_table in hand. Now I locate in height of 50."
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "Thought: Mine iron ore should use the tool stone pickaxe. I have stone pickaxe in inventory. But I do not equip it now. So I should equip the stone pickaxe. \nAction: 2"
+                    },
+                    {
+                        "role": "user",
+                        "content": "Task: Obtain logs.\nSkills: 1. chop down the tree, 2. equip iron axe to chop down the tree, \nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "Thought: Equip the iron axe will accelerate the speed to chop trees. I have an iron axe in the inventory. So I should equip the iron axe first.\nAction: 2"
+                    },
+                    {
+                        "role": "user",
+                        "content": "Task: Obtain diamond.\nSkills: 1. dig down, 2. equip iron pickaxe, 3. break stone blocks, obtain diamond\nAgent State: Now I have 1 iron pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the iron_pickaxe in hand. Now I locate in height of 30."
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "Thought: Diamond in Minecraft only exists in layers under height 15 and above height 5. Now my height is 30, which does not exist diamonds. So I should dig down to lower layers.\nAction: 1"
+                    },
+                    {
+                        "role": "user",
+                        "content": query
+                    }
+                ],
+                temperature=1,
+                max_tokens=256,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
+            )
+            break
+        except openai.APIConnectionError:
+            print(f"Connection error. Retrying {retries+1}/{max_retries}...")
+            retries += 1
+            time.sleep(5)  # Wait before retrying
     print(response.choices[0].message.content)
     action_index = parse_action_index(response.choices[0].message.content)
     if not action_index or action_index > len( skills[task]): # if no action or action beyond task skills
