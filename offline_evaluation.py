@@ -15,10 +15,6 @@ from datetime import datetime
 from functools import partial
 
 from rich import print as rprint
-from collections import defaultdict
-
-# Ensure reproducibility
-random.seed(42)
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
@@ -120,7 +116,7 @@ def evaluate_single_task(args, task_name):
     task_env_setting = task_config_dict['env']
     task_env_yaml = build_env_yaml(task_env_setting)
     if task_config_dict['task'] in memory.keys():
-        rprint(f"[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
+        rprint(f"\n[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
         task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
     else:
         rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
@@ -129,7 +125,7 @@ def evaluate_single_task(args, task_name):
         raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
 
     env = MinecraftWrapper("tmp")
-    if args.activate_gui:
+    if args.use_gui:
         env = RenderWrapper(env)
     env.reset()
     env.maximum_step = 1200*args.time - 1
@@ -139,7 +135,7 @@ def evaluate_single_task(args, task_name):
 
     mark.env_yaml = task_env_yaml
     task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
-    return task_res, msg
+    return task_res, msg, task_config_dict['env']['biome'], task_env_yaml['seed']
 
 if __name__ == '__main__':
 
@@ -170,7 +166,7 @@ if __name__ == '__main__':
         default="qwen-turbo", 
         help="LLM used for evaluation"
     )
-    parser.add_argument("--activate_gui", action="store_false", help="Disable GUI evaluation")
+    parser.add_argument("--use_gui", type=int, default=0, help="Disable GUI evaluation")
     ################################
 
     args = parser.parse_args()
@@ -180,22 +176,26 @@ if __name__ == '__main__':
     print(f"Using LLM: {args.llm_type}")
 
     # # original eval for single task
-    # task_res, msg = evaluate_single_task(args, args.task_name[0])
+    # (task_name, eval_times) = args.task_name
+    # task_res, msg = evaluate_single_task(args, task_name)
 
     # eval for list of task
-    final_results = []
-    for (task_name, eval_times) in args.tasks_list:
-        success = 0
-        total = 0
-        for _ in range(eval_times):
-            task_res, msg = evaluate_single_task(args, task_name)
-            total += 1
-            if task_res:
-                success += 1
-        text_result = f"Task {task_name}: \n\tsuccess / total = {success} / {total} = {round(success/total, 4)}"
-        print(text_result)    
-        final_results.append(text_result)
+    output_file = "/home/marmot/Boyang/JARVIS-1/lby/eval.txt"
+    file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
+    with open(output_file,'a') as f_out:
+        if not file_exists:
+            f_out.write(f"task name\tbiome\tseed\tresult\tresult_msg\n")
+        for (task_name, eval_times) in args.tasks_list:
+            success = 0
+            total = 0
+            for _ in range(eval_times):
+                task_res, msg, biome, seed = evaluate_single_task(args, task_name)
+                total += 1
+                if task_res:
+                    success += 1
+                # ✅ Save individual task results to file
+                f_out.write(f"{task_name}\t{biome}\t{seed}\t{task_res}\t{msg}\n")
+                f_out.flush()  # Ensure data is written to file immediately
+
+            print(f"Task {task_name}: \n\tsuccess / total = {success} / {total} = {round(success/total, 4)}")
     
-    # reprint all tasks' eval results
-    for rst in final_results:
-        print(rst)
