@@ -170,4 +170,5 @@ MCP-Reborn-minerl/
 data
 .idea
 
-lby
+lby/global_configs/envs/*.yaml
+!lby/global_configs/envs/jarvis.yaml
