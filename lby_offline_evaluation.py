@@ -157,6 +157,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--llm_type", type=str, 
         default="qwen-turbo", 
+        choices=["qwen-turbo", "qwen-plus", "qwen-max", "qwen-omni-turbo", "qwen2.5-14b-instruct-1m"],
         help="LLM used for evaluation"
     )
     parser.add_argument("--use_gui", type=int, default=0, help="Disable GUI evaluation")
