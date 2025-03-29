@@ -1,0 +1,4 @@
+task name	biome	seed	result	result_msg
+crafting_table	forest	12345	True	success
+crafting_table	plains	5021602761754158700	True	success
+crafting_table	forest	8130585229317756871	True	success
