@@ -77,7 +77,7 @@ def extract_primitive_steps(target, recipes=USED_RECIPE):
     return visited
 
 # === domain.pddl 和 problem.pddl 生成 ===
-def write_domain_and_problem(target, steps):
+def write_domain_and_problem(target, steps=0):
     Item = UserType("item")
     count = Fluent("count", IntType(0, 9999), item=Item)
     problem = Problem("minecraft-domain")
@@ -151,14 +151,18 @@ def write_domain_and_problem(target, steps):
     problem.add_goal(GE(count(goal), 1))
 
     writer = PDDLWriter(problem)
-    writer.write_domain("domain.pddl")
-    writer.write_problem(f"problem_{target.replace('minecraft:', '')}.pddl")
+    domain_file = os.path.join(PDDL_RESULT_PATH, "domain.pddl")
+    problem_file = os.path.join(PDDL_RESULT_PATH,f"problem_{target.replace('minecraft:', '')}.pddl")
+    writer.write_domain(domain_file)
+    writer.write_problem(problem_file)
     print("domain.pddl, problem generated")
 
     try:
+        JAVA17 = "/usr/lib/jvm/java-1.17.0-openjdk-amd64/bin/java"
         result = subprocess.run([
-            "java", "-jar", "enhsp.jar", "-o", "domain.pddl", "-f", f"problem_{target.replace('minecraft:', '')}.pddl"
+            JAVA17, "-jar", os.path.join(PDDL_DATA_PATH, "enhsp.jar"), "-o", domain_file, "-f", problem_file
         ], capture_output=True, text=True, timeout=30)
+
         lines = result.stdout.splitlines()
         plan_started = False
         plan_lines = []
