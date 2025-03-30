@@ -61,6 +61,7 @@ def update_plan(plan_origin, plan_add):
         else:
             plan_origin.insert(idx, new_p)  
         idx+=1
+        idx = max(idx, len(plan_origin)-1)
     return plan_origin
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
@@ -83,14 +84,16 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
         if skill['type'] == 'mine':
             ret_flag, ret_info = agent.do(text_prompt, reward = float('inf'), monitor_fn = partial(monitor_function, goal["goal"]), timeout=timeout)
         else:
-            ret_flag, ret_info = agent.do(skill['type'], target_item=skill['object_item'])
+            try:
+                ret_flag, ret_info = agent.do(skill['type'], target_item=skill['object_item'])
+            except:
+                ret_flag, ret_info = False, f"LLM proposed skill: {skill['text'], skill['type'], skill['object_item']} can not be operated."
     elif goal_type == 'craft' or goal_type == 'smelt':
         agent.record_prompts[len(agent.record_infos)] = f"{goal_type} {goal_target}"
         ret_flag, ret_info = agent.do(goal_type, target = goal_target, target_num = goal_target_num)
     else:
         raise NotImplementedError
     return ret_flag, ret_info
-
 
 def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     

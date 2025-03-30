@@ -149,7 +149,7 @@ def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects, do not propose basic items or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. Output your thought and your evaluation result."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects in microcraft world, do not propose basic items or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. (6) Do not make up non-existent object. Output your thought and your evaluation result."
             },
             {
                 "role": "user",
@@ -231,7 +231,7 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip tool when you already have it in your inventory. (2) Do not consider any crafting acitons (3) Decribe things with microcraft terms. Output reasoning thought and your final action with type, the action types are only 'mine', 'equip'."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip a tool when you already have it in your inventory, if you don't have any, just do the task directly. (2) NEVER craft things. (3) Decribe things with microcraft style. (4) Focus on current inventory information, do not make things up. Output reasoning thought and your final action with its type, the action types are only 'mine', 'equip'."
             },
             {
                 "role": "user",
@@ -243,11 +243,11 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "user",
-                "content": "Task: Obtain iron_ore.\nAgent State: Now I have 1 stone pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the crafting_table in hand. Now I locate in height of 50."
+                "content": "Task: Obtain iron_ore.\nAgent State: Now I have 1 stone_pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the crafting_table in hand. Now I locate in height of 50."
             },
             {
                 "role": "assistant",
-                "content": "Thought: Mine iron ore should use the tool stone pickaxe. I have stone pickaxe in inventory. But I do not equip it now. So I should equip the stone pickaxe. \nAction: equip stone pickaxe, equip."
+                "content": "Thought: Mine iron_ore should use the tool stone pickaxe. I have stone pickaxe in inventory. But I do not equip it now. So I should equip the stone pickaxe. \nAction: equip stone_pickaxe, equip."
             },
             {
                 "role": "user",
@@ -255,19 +255,19 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "assistant",
-                "content": "Thought: Equip the iron axe will accelerate the speed to chop trees. I have an iron axe in the inventory. So I should equip the iron axe first.\nAction: equip iron axe, equip."
+                "content": "Thought: Equip the iron_axe will accelerate the speed to chop trees. I have an iron_axe in the inventory. So I should equip the iron_axe first.\nAction: equip iron_axe, equip."
             },
             {
                 "role": "user",
-                "content": "Task: Obtain logs.\nAgent State: Now I have 1 iron_axe, 1 stone pickaxe in inventory. Now I equip the air in hand. Now I locate in height of 60."
+                "content": "Task: Obtain logs.\nAgent State: Now I have 1 iron_axe, 1 stone_pickaxe in inventory. Now I equip the air in hand. Now I locate in height of 60."
             },
             {
                 "role": "assistant",
-                "content": "Thought: Equip the axe will accelerate the speed to chop trees. I have an iron axe and a stone axe in the inventory. Iron pickaxe is a better tool, so I should equip the iron axe first.\nAction: equip iron axe, equip."
+                "content": "Thought: Equip a tool will accelerate the speed to chop trees. I have an iron_axe and a stone axe in the inventory. iron_pickaxe is a better tool, so I should equip the iron_axe first.\nAction: equip iron_axe, equip."
             },
             {
                 "role": "user",
-                "content": "Task: Obtain diamond.\nAgent State: Now I have 1 iron pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the iron_pickaxe in hand. Now I locate in height of 30."
+                "content": "Task: Obtain diamond.\nAgent State: Now I have 1 iron_pickaxe, 1 crafting_table, 4 stick, 6 planks in inventory. Now I equip the iron_pickaxe in hand. Now I locate in height of 30."
             },
             {
                 "role": "assistant",
@@ -288,10 +288,14 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
     print(response.choices[0].message.content)
     action_txt, action_type = parse_action_text(response.choices[0].message.content)
     action_txt = f"get {task}" if action_txt is None else action_txt
+    if action_type == "equip":
+        object_item = action_txt.split(" ")[-1]
+    else:
+        object_item = None
     return {
             "text": action_txt,
             "type": action_type,
-            "object_item": None
+            "object_item": object_item
         }
 
 class JARVIS:
