@@ -5,11 +5,15 @@ from unified_planning.shortcuts import *
 from unified_planning.model.types import *
 from unified_planning.io import PDDLWriter
 import subprocess
+import os
+
+PDDL_DATA_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl"
+PDDL_RESULT_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl/generated_pddl"
 
 # === 配置和加载 ===
-with open("cared_recipies.json") as f:
+with open(os.path.join(PDDL_DATA_PATH,"cared_recipies.json")) as f:
     recipes_raw = json.load(f)
-with open("cared_ingredients.json") as f:
+with open(os.path.join(PDDL_DATA_PATH,"cared_ingredients.json")) as f:
     cared_ingredients = json.load(f)
 
 def normalize(name):
@@ -23,15 +27,15 @@ def get_result_count(recipe):
     r = recipe.get("result")
     return 1 if isinstance(r, str) else r.get("count", 1)
 
-recipes = {normalize(k): v for k, v in recipes_raw.items() if get_result_item(v)}
+USED_RECIPE = {normalize(k): v for k, v in recipes_raw.items() if get_result_item(v)}
 
 tag_map = {
     "minecraft:planks": ["minecraft:planks"],
-    "minecraft:logs": ["minecraft:oak_log"]
+    "minecraft:logs": ["minecraft:logs"]
 }
 
 # === 提取所有相关 item ===
-def extract_all_related_items(target, recipes):
+def extract_primitive_steps(target, recipes=USED_RECIPE):
     visited = set()
     queue = deque()
     queue.append(normalize(target))
@@ -73,13 +77,13 @@ def extract_all_related_items(target, recipes):
     return visited
 
 # === domain.pddl 和 problem.pddl 生成 ===
-def write_domain_and_problem(target):
+def write_domain_and_problem(target, steps):
     Item = UserType("item")
     count = Fluent("count", IntType(0, 9999), item=Item)
     problem = Problem("minecraft-domain")
     problem.add_fluent(count)
 
-    related_items = extract_all_related_items(target, recipes)
+    related_items = extract_primitive_steps(target, USED_RECIPE)
     related_items.add(normalize(target))
 
     obj_map = {i: Object(i.replace(":", "_"), Item) for i in related_items}
@@ -87,13 +91,13 @@ def write_domain_and_problem(target):
         problem.add_object(o)
 
     for i in related_items:
-        if i not in recipes:
+        if i not in USED_RECIPE:
             action = InstantaneousAction(f"collect__{i.replace('minecraft:', '')}")
             itm = obj_map[i]
             action.add_increase_effect(count(itm), 1)
             problem.add_action(action)
 
-    for name, recipe in recipes.items():
+    for name, recipe in USED_RECIPE.items():
         if name not in related_items:
             continue
         result = obj_map[name]
