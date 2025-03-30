@@ -142,8 +142,10 @@ def parse_evaluation_text(text):
                 return "", "proceed"
     return None, "proceed"
 
-def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
+def evaluate_plan(plan, addition_info="", llm_model="gpt-3.5-turbo"):
     query = f"""Task: {translate_task(plan[-1]['text'])}.\nCurrent plan: {translate_plan(plan)}."""
+    if len(addition_info):
+        query+=addition_info
     response = client.chat.completions.create(
         model=llm_model,
         messages=[

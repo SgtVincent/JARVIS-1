@@ -114,11 +114,17 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         obj_name = list(task_obj.keys())[0]
         plan = get_pddl_plan(obj_name)
         
-    insights, eval_type = evaluate_plan(plan, llm_model)
-    if eval_type == "refine":
-        # update_plan(get_pddl_plan("iron_pickaxe"), get_pddl_plan("wooden_pickaxe"))
-        add_plan = get_pddl_plan(insights)
-        plan = update_plan(plan, add_plan)
+    while True:
+        addition_info = ""
+        insights, eval_type = evaluate_plan(plan, addition_info, llm_model)
+        if eval_type == "proceed":
+            break
+        if eval_type == "refine":
+            try:
+                add_plan = get_pddl_plan(insights)
+                plan = update_plan(plan, add_plan)
+            except Exception:
+                addition_info = f"\nYour former propose: {insights}, {eval_type}. is not valid."
 
     mark.current_plan = plan
 
