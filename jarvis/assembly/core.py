@@ -119,6 +119,141 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
         return random.choice(skills[task])
     return skills[task][action_index-1]
 
+import random
+
+def summarize_recipe(item_key, recipes_data, depth=0, visited=None):
+    if visited is None:
+        visited = set()
+    if item_key in visited:
+        return ""
+    visited.add(item_key)
+
+    if item_key not in recipes_data:
+        return f"{item_key} can be obtained by mining or other means.\n"
+
+    recipe_info = recipes_data[item_key]
+    summary = f"Item {item_key} => type: {recipe_info['type']}\n"
+
+    if recipe_info['type'] == 'minecraft:crafting_shaped':
+        pattern = recipe_info['pattern']
+        mat_count = {}
+        for row in pattern:
+            for c in row:
+                if c != ' ':
+                    mat_count[c] = mat_count.get(c, 0) + 1
+        for symbol, detail in recipe_info['key'].items():
+            mat_item = detail['item'].replace("minecraft:", "")
+            needed = mat_count.get(symbol, 0)
+            summary += f"- Needs {needed} x {mat_item}\n"
+            summary += summarize_recipe(mat_item, recipes_data, depth+1, visited)
+
+    elif recipe_info['type'] == 'minecraft:smelting':
+        ingredient = recipe_info['ingredient'].replace("minecraft:", "")
+        summary += f"- Smelt from {ingredient}\n"
+        summary += summarize_recipe(ingredient, recipes_data, depth+1, visited)
+
+
+    return summary
+
+def get_plan(final_goal, info, recipes_data):
+
+    inventory_text = translate_inventory(info)
+    equipment_text = translate_equipment(info)
+    height_text = translate_height(info)
+
+    if isinstance(final_goal, dict):
+        final_goal_text = ", ".join([f"{v} {k}" for k,v in final_goal.items()])
+        main_item = list(final_goal.keys())[0]
+    else:
+        final_goal_text = f"1 {final_goal}"
+        main_item = final_goal
+
+    recipe_summary = summarize_recipe(main_item, recipes_data)
+
+    query = (
+        f"My current inventory state: {inventory_text}\n"
+        f"{equipment_text}\n"
+        f"{height_text}\n"
+        f"I want to obtain {final_goal_text} in Minecraft step by step.\n\n"
+        f"Here is relevant crafting info derived from the JSON:\n"
+        f"{recipe_summary}\n"
+        "Now please generate a plan as a Python list of subgoals.\n"
+        "Each subgoal is a dict with keys: goal, type, text.\n"
+        "For example: [{\"goal\": {\"oak_log\": 4}, \"type\": \"mine\", \"text\": \"oak_log\"}, ... ]\n"
+        "Do not include extra explanation. Only output the JSON list.\n"
+    )
+
+    response = client.chat.completions.create(
+        model="qwen-max",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant in Minecraft. Please produce a multi-step plan in JSON format. No additional text."
+            },
+            {
+                "role": "user",
+                "content": query
+            }
+        ],
+        temperature=0.7,
+        max_tokens=512,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+
+    raw_output = response.choices[0].message.content.strip()
+    print("LLM raw output for plan:", raw_output)
+
+    try:
+        plan = json.loads(raw_output)
+    except json.JSONDecodeError:
+        plan = [
+            {"goal": {str(final_goal): 1}, "type": "mine", "text": f"{final_goal}"}
+        ]
+
+    return plan
+import json
+
+def get_task_and_text_llm(user_input: str):
+
+    options_msg = (
+      "We only support these tasks: wooden_pickaxe, stone_pickaxe, iron_pickaxe, diamond.\n"
+      "Output your choice in JSON format: {\"task\": \"...\", \"text\": \"...\"}.\n"
+      "Where text is the recipe steps for that chosen item."
+    )
+
+    possible_texts = {
+       "wooden_pickaxe": "To obtain a wooden pickaxe, you need to ...",
+       "stone_pickaxe": "To obtain a stone pickaxe, you need to ...",
+       "iron_pickaxe": "To obtain an iron pickaxe, you need to ...",
+       "diamond": "To obtain a diamond, you need to ..."
+    }
+    instructions = "Here are possible texts for each task:\n"
+    for k, v in possible_texts.items():
+        instructions += f"{k}: {v}\n"
+
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant in Minecraft."},
+        {"role": "user", "content": f"{user_input}\n{options_msg}\n{instructions}"}
+    ]
+
+    response = client.chat.completions.create(
+        model="qwen-max",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=256
+    )
+
+    raw_answer = response.choices[0].message.content.strip()
+    print("LLM raw answer:", raw_answer)
+
+    try:
+        parsed = json.loads(raw_answer)
+        return parsed
+    except:
+        return {"task": "unknown", "text": "Could not parse LLM output."}
+
 class JARVIS:
     def __init__(self, model = 'gpt-3.5-turbo'):
         self.model = model
