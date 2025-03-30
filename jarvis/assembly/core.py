@@ -151,7 +151,7 @@ def evaluate_plan(plan, addition_info="", llm_model="gpt-3.5-turbo"):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects in microcraft world, do not propose basic items or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. (6) Do not make up non-existent object. Output your thought and your evaluation result."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects in microcraft world, do not propose basic items or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. (6) Do not make up non-existent object. (7) Do not propose object even harder than current task. Output your thought and your evaluation result."
             },
             {
                 "role": "user",
@@ -233,7 +233,7 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip a tool when you already have it in your inventory, if you don't have any, just do the task directly. (2) NEVER craft things. (3) Decribe things with microcraft style. (4) Focus on current inventory information, do not make things up. Output reasoning thought and your final action with its type, the action types are only 'mine', 'equip'."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip a tool when you already have it in your inventory, if you don't have any, just do the task directly. (2) NEVER craft things. (3) Decribe things with microcraft style. (4) Focus on current inventory information, do not make things up. (5) You DO NOT stop even if you already have the item in the inventory, we may need more of the item. Output reasoning thought and your final action with its type, the action types are only 'mine', 'equip'."
             },
             {
                 "role": "user",
@@ -253,11 +253,19 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "user",
-                "content": "Task: Obtain logs.\nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
+                "content": "Task: Obtain cobblestone.\nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
             },
             {
                 "role": "assistant",
-                "content": "Thought: Equip the iron_axe will accelerate the speed to chop trees. I have an iron_axe in the inventory. So I should equip the iron_axe first.\nAction: equip iron_axe, equip."
+                "content": "Thought: Equip the iron_axe will accelerate the speed to mine stones. I have an iron_axe in the inventory. So I should equip the iron_axe first.\nAction: equip iron_axe, equip."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain logs.\nAgent State: Now my inventory has 1 birch_log. Now I equip the birch_log in mainhand. Now I locate in height of 64."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Though I have birch_log in inventory, the task is still obtain logs. This indicates current logs is not enough, so I should keep getting logs.\nAction: chop down trees and collect logs, mine."
             },
             {
                 "role": "user",

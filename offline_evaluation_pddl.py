@@ -31,13 +31,12 @@ def get_pddl_plan(obj_name):
     pddl_task_name = f"minecraft:{obj_name}"
 
     pddl_sequences = write_domain_and_problem(pddl_task_name, extract_primitive_steps(pddl_task_name))
-    plan = pddl_sequences.split('\n')
-    plan = [step_pddl_to_txt(p) for p in plan]
-    plan_dict= defaultdict(int)
+    plan = [step_pddl_to_txt(p) for p in pddl_sequences]
+    count_dict= defaultdict(int)
     for x in plan:
-        plan_dict[x] += 1
+        count_dict[x] += 1
     plan.clear()
-    for subgoal, num in plan_dict.items():
+    for subgoal, num in count_dict.items():
         action, item = subgoal.split("__")
         if action == "collect":
             action = 'mine'
@@ -122,7 +121,10 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         if eval_type == "refine":
             try:
                 add_plan = get_pddl_plan(insights)
-                plan = update_plan(plan, add_plan)
+                if len(add_plan) > len(plan):
+                    addition_info = f"\nYour refine propose: '{insights}, {eval_type}' is not realistic, you are making task harder."
+                else:
+                    plan = update_plan(plan, add_plan)
             except Exception:
                 addition_info = f"\nYour former propose: {insights}, {eval_type}. is not valid."
 

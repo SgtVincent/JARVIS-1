@@ -76,6 +76,25 @@ def extract_primitive_steps(target, recipes=USED_RECIPE):
 
     return visited
 
+
+def expand_plan_by_yield(plan_lines):
+    expanded = []
+    current_time = 0.0
+    for line in plan_lines:
+        if not line or "(" not in line:
+            continue
+        action_raw = line.split(":")[-1].strip().strip("()")
+        parts = action_raw.split("__")
+        if len(parts) != 2:
+            continue
+        action, target = parts
+        full_name = f"minecraft:{target}"
+        count = get_result_count(USED_RECIPE.get(full_name, {})) if action in ("make", "smelt") else 1
+        for _ in range(count):
+            expanded.append(f"{current_time:.1f}: ({action}__{target})")
+            current_time += 1.0
+    return expanded
+
 # === domain.pddl 和 problem.pddl 生成 ===
 def write_domain_and_problem(target, steps=0):
     Item = UserType("item")
@@ -174,17 +193,10 @@ def write_domain_and_problem(target, steps=0):
                 plan_started = True
                 plan_lines.append(line.strip())
         print("Generate Plan:")
-        for line in plan_lines:
+        for line in expand_plan_by_yield(plan_lines):
             print(line)
         
-        txt_output = result.stdout
-        try:
-            start = txt_output.index("0.0:")
-            end   = txt_output.index("Plan-Length")
-            extracted_steps = txt_output[start:end].strip()
-        except:
-            extracted_steps = None
-        return extracted_steps
+        return expand_plan_by_yield(plan_lines)
     except Exception as e:
         print(" ENHSP failed:", e)
 
