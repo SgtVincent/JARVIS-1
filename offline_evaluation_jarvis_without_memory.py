@@ -4,7 +4,7 @@ from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
 
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill,get_plan
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items
 
 import random
 import json
@@ -15,9 +15,12 @@ from datetime import datetime
 from functools import partial
 
 from rich import print as rprint
+import yaml
+
+ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
 
 
-def execute(agent, goal):
+def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
     assert goal_type in ["mine", "craft", "smelt"], f"subgoal type {goal_type} is not supported"
 
@@ -25,7 +28,7 @@ def execute(agent, goal):
     goal_target_num = list(goal["goal"].values())[0]
 
     if goal_type == 'mine':
-        skill = get_skill(goal_target, agent.record_infos[-1])
+        skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
         if "timeout" in goal.keys():
             timeout = goal["timeout"]
         else:
@@ -46,26 +49,29 @@ def execute(agent, goal):
     return ret_flag, ret_info
 
 
-def evaluate_task(env, mark, task_dict):
+def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     env.reset()
     mark.reset()
-
 
     mark.record_goals = {}
     mark.record_prompts = {}
     mark.record_infos = mark.post_infos([env.step(env.noop_action())[-1]])
-    print(mark.record_infos)
+    print('mark.record_infos', mark.record_infos)
 
-    json_path = "/home/liangjunyi/GitHub/JARVIS-1/jarvis/assets/cared_recipies.json"
+    json_path = "/home/liangjunyi/NUS/JARVIS-1/jarvis/assets/cared_recipies.json"
     with open(json_path, "r") as f:
         recipes_data = json.load(f)
 
-    rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}> via LLM!")
+    rprint(f"[{datetime.now()}] Generating plan for task <{task_dict['task']}> via LLM!")
 
-    plan = get_plan(task_config_dict['task_obj'], info=mark.record_infos[-1],recipes_data=recipes_data)
+    seq_task = detect_item_dependencies(task_dict['task_obj'])
+    if not check_items(seq_task):
+        return False, "invalid item generated"
+    plan = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
 
-    task_config_dict['plan'] = plan
+    task_dict['plan'] = plan
     mark.current_task = task_dict
+
     task_obj = task_dict['task_obj']
     plan = task_dict['plan']
     mark.current_plan = plan
@@ -83,16 +89,31 @@ def evaluate_task(env, mark, task_dict):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        while not goal_obj_ret:
-            ret_flag, ret_info = execute(mark, subgoal)
+        max_subgoal_attempts = 10
+        attempt_count = 0
+
+        while not goal_obj_ret and attempt_count < max_subgoal_attempts:
+            ret_flag, ret_info = execute(mark, subgoal, llm_model)
             rprint(f"[{datetime.now()}] Executation Flag: {ret_flag} Information: {ret_info}")
 
+            attempt_count += 1
             goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
             task_done, done_info = monitor_function(obj=task_obj, info=mark.record_infos[-1])
             if task_done or len(mark.record_infos) > env.maximum_step:
                 break
+
+            if ret_flag is False:
+                if ret_info.get("terminated"):
+                    rprint("[ERROR] Environment reset. Abort subgoal immediately.")
+                    break
+                else:
+                    rprint(f"[WARNING] Attempt {attempt_count} for subgoal failed. Retrying...")
+                    continue
+
         if goal_obj_ret:
             goal_seq += 1
+        else:
+            return False, "subgoal_failed"
 
         task_done, done_info = monitor_function(obj=task_obj, info=mark.record_infos[-1])
         if task_done:
@@ -106,26 +127,39 @@ def evaluate_task(env, mark, task_dict):
     return False, "plan_error"
 
 
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description="Evaluate JARVIS-1 in offline mode.")
-    parser.add_argument("-task", "--task_name", type=str, default="wooden_pickaxe", help="evaluation task name")
-    parser.add_argument("-time", "--time", type=int, default=10, help="evaluation time(mins) for task")
-    parser.add_argument("-dynamic", "--dynamic", type=bool, default=True, help="dynamic environment or not")
-    parser.add_argument("-mode", "--evaluation_mode", type=str, default="offline",
-                        help="online or offline evaluation mode")
-    args = parser.parse_args()
-
-    assert args.evaluation_mode == "offline", "Only support offline evaluation mode now!"
-
-    task_name = args.task_name
+# for single task evaluate
+def evaluate_single_task(args, task_name, yaml_file):
     task_config_dict = get_task_config(task_name)
 
-    task_env_setting = task_config_dict['env']
-    task_env_yaml = build_env_yaml(task_env_setting)
+    ### modify original config to fit paper setting ###
+    if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
+        task_config_dict['env']['init_inventory'] = {
+            0: {
+                "type": "iron_axe",
+                "quantity": 1
+            }
+        }
+    else:
+        task_config_dict['env']['init_inventory'] = {}
+    ###################################################
 
-    env = MinecraftWrapper("demo2")
-    env = RenderWrapper(env)
+    with open(os.path.join(ENV_CONFIG_DIR, yaml_file), 'r') as f:
+        task_env_yaml = yaml.load(f, Loader=yaml.FullLoader)
+
+    task_config_dict['env']['biome'] = task_env_yaml["candidate_preferred_spawn_biome"][0]
+
+    # if task_config_dict['task'] in memory.keys():
+    #     rprint(f"\n[{datetime.now()}] Getting plan from memory for task {task_config_dict['task']}!")
+    #     task_config_dict['plan'] = memory[task_config_dict['task']]['plan']
+    # else:
+    #     rprint(f"[{datetime.now()}] Found no plans in memory for task <{task_config_dict['task']}>!")
+    #     rprint(f"[{datetime.now()}] Generating plan for task <{task_config_dict['task']}>!")
+    #     # FIXME: generate plan for task
+    #     raise NotImplementedError("Online generating plan for task is not merged yet! Waiting for the next version.")
+
+    env = MinecraftWrapper(yaml_file)
+    if args.use_gui:
+        env = RenderWrapper(env)
     env.reset()
     env.maximum_step = 1200 * args.time - 1
 
@@ -133,5 +167,53 @@ if __name__ == '__main__':
     mark.reset()
 
     mark.env_yaml = task_env_yaml
+    task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
+    return task_res, msg, task_config_dict['env']['biome'], task_env_yaml['seed']
 
-    task_res, msg = evaluate_task(env, mark, task_config_dict)
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description="Evaluate JARVIS-1 in offline mode.")
+    parser.add_argument("-task", "--task_name", type=tuple, default="iron_pickaxe", help="evaluation task name, times")
+    parser.add_argument("-time", "--time", type=int, default=10, help="evaluation time(mins) for task")
+    parser.add_argument("-dynamic", "--dynamic", type=bool, default=True, help="dynamic environment or not")
+    parser.add_argument("-mode", "--evaluation_mode", type=str, default="offline",
+                        help="online or offline evaluation mode")
+
+    ############# Newly add args #################
+    parser.add_argument(
+        "--tasks_list", type=list,
+        default=["stone_pickaxe"],
+        help="evaluation tasks_name list"
+    )
+    parser.add_argument(
+        "--llm_type", type=str,
+        default="qwen-max",
+        choices=["qwen-turbo", "qwen-plus", "qwen-max", "qwen-omni-turbo", "qwen2.5-14b-instruct-1m"],
+        help="LLM used for evaluation"
+    )
+    parser.add_argument("--use_gui", type=int, default=1, help="Disable GUI evaluation")
+    ################################
+
+    args = parser.parse_args()
+
+    assert args.evaluation_mode == "offline", "Only support offline evaluation mode now!"
+
+    print(f"Using LLM: {args.llm_type}")
+
+    task_yamls = os.listdir(ENV_CONFIG_DIR)
+
+    # eval for list of task
+    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
+    file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
+    with open(output_file, 'a') as f_out:
+        if not file_exists:
+            f_out.write(f"task name\tbiome\tseed\tresult\tresult_msg\n")
+
+        for task_name in args.tasks_list:
+            eval_yamls = [x for x in task_yamls if task_name in x]
+            for task_yaml_file in eval_yamls:
+                task_res, msg, biome, seed = evaluate_single_task(args, task_name, task_yaml_file)
+                f_out.write(f"{task_name}\t{biome}\t{seed}\t{task_res}\t{msg}\n")
+                f_out.flush()  # Ensure data is written to file immediately
+                os.remove(os.path.join(ENV_CONFIG_DIR, task_yaml_file))

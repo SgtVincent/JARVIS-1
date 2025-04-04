@@ -189,7 +189,7 @@ class WorkerPlus(Worker):
             self._attack_continue()
     
         except AssertionError as e:
-            return False, str(e) 
+            return False, {'reason': f'Can not find {target_item} in inventory', "terminated": False}
         
         return True, None
 

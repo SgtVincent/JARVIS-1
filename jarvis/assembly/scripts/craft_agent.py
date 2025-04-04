@@ -570,7 +570,7 @@ class Worker(object):
             self.crafting_slotpos = 'none'  
 
         except AssertionError as e:
-            return False, str(e) 
+            return False, {'reason': f'not enough materials for {target}', "terminated": True}
         
         return True, None
 
