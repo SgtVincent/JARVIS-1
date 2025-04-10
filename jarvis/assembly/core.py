@@ -61,6 +61,8 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
         return skills[task][0]
     for i, skill in enumerate(skills[task]):
         skill_content += f"{i+1}. {skill['text']}, "
+    print("+++++++++++++++++++++++++++Before LLM++++++++++++++++++++++++++++++++++")
+    print("skill_content:",skill_content)
     query = f"Task: {translate_task(task)}.\nSkills: {skill_content}\nAgent State: {translate_inventory(info)} {translate_equipment(info)} {translate_height(info)}"
     print("query: ", query)
     
@@ -114,7 +116,8 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
             print(f"Connection error. Retrying {retries+1}/{max_retries}...")
             retries += 1
             time.sleep(5)  # Wait before retrying
-    print(response.choices[0].message.content)
+    print("++++++++++++++++++++++++++++++++After LLM+++++++++++++++++++++++++++++++++++++++++")
+    print("LLM output:",response.choices[0].message.content)
     action_index = parse_action_index(response.choices[0].message.content)
     if not action_index or action_index > len( skills[task]): # if no action or action beyond task skills
         return random.choice(skills[task])

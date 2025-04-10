@@ -17,7 +17,7 @@ from functools import partial
 from rich import print as rprint
 import yaml
 
-ENV_CONFIG_DIR = "/home/marmot/Boyang/JARVIS-1/lby/global_configs/envs"
+ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list, 
-        default=["crafting_table", "wooden_pickaxe","stone_pickaxe","iron_pickaxe"],
+        default=["iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         choices=["qwen-turbo", "qwen-plus", "qwen-max", "qwen-omni-turbo", "qwen2.5-14b-instruct-1m"],
         help="LLM used for evaluation"
     )
-    parser.add_argument("--use_gui", type=int, default=0, help="Disable GUI evaluation")
+    parser.add_argument("--use_gui", type=int, default=1, help="Disable GUI evaluation")
     ################################
 
     args = parser.parse_args()
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"/home/marmot/Boyang/JARVIS-1/lby/eval_{args.llm_type}.txt"
+    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     with open(output_file,'a') as f_out:
         if not file_exists:

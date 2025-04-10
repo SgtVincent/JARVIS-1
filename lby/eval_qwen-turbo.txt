@@ -197,3 +197,4 @@ stone_pickaxe	forest	12345	True	success
 stone_pickaxe	plains	8496160286458255438	True	success
 stone_pickaxe	plains	8130585229317756871	True	success
 stone_pickaxe	forest	3550439660973344405	False	timeout
+iron_pickaxe	forest	8496160286458255438	True	success
