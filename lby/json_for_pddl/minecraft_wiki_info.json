@@ -1,0 +1,814 @@
+{
+    "Planks": {
+      "description": "Planks are common blocks used in building and crafting. They are one of the first items players craft in Survival mode. There are 12 variants including overworld planks from tree logs, bamboo planks from bamboo blocks, and nether planks from huge fungus stems.",
+      "types": [
+        "Oak",
+        "Spruce",
+        "Birch",
+        "Jungle",
+        "Acacia",
+        "Dark Oak",
+        "Mangrove",
+        "Cherry",
+        "Pale Oak",
+        "Bamboo",
+        "Crimson",
+        "Warped"
+      ],
+      "properties": {
+        "renewable": true,
+        "stackable": 64,
+        "tool": "Axe (preferred)",
+        "blast_resistance": 3,
+        "hardness": 2,
+        "flammable": {
+          "overworld": true,
+          "nether": false
+        },
+        "catches_fire_from_lava": {
+          "overworld": true,
+          "nether": false
+        }
+      },
+      "obtaining": {
+        "breaking": {
+          "can_break_by_hand": true,
+          "preferred_tool": "Axe",
+          "breaking_times_sec": {
+            "hand": 3.0,
+            "wooden_axe": 1.5,
+            "stone_axe": 0.75,
+            "iron_axe": 0.5,
+            "diamond_axe": 0.4,
+            "netherite_axe": 0.35,
+            "golden_axe": 0.25
+          }
+        },
+        "natural_generation": {
+          "Oak": [
+            "Mineshafts",
+            "Plains Villages",
+            "Strongholds",
+            "Woodland Mansions",
+            "Shipwrecks"
+          ],
+          "Spruce": [
+            "Swamp Huts",
+            "Taiga and Snowy Villages",
+            "Ocean Ruins",
+            "Shipwrecks"
+          ],
+          "Birch": ["Woodland Mansions", "Shipwrecks", "Pillager Outposts"],
+          "Jungle": ["Shipwrecks"],
+          "Acacia": ["Savanna Villages"],
+          "Dark Oak": [
+            "Badlands Mineshafts",
+            "Woodland Mansions",
+            "Ocean Ruins",
+            "Shipwrecks",
+            "Pillager Outposts",
+            "Ancient Cities"
+          ],
+          "Others": []
+        },
+        "crafting": {
+          "methods": [
+            {
+              "input": ["Matching Log", "Stripped Log", "Wood", "Stripped Wood"],
+              "output": { "planks": 4 }
+            },
+            {
+              "input": ["Block of Bamboo", "Stripped Bamboo Block"],
+              "output": { "planks": 2 }
+            },
+            {
+              "input": [
+                "Matching Stem",
+                "Stripped Stem",
+                "Hyphae",
+                "Stripped Hyphae"
+              ],
+              "output": { "planks": 4 }
+            }
+          ]
+        }
+      }
+    },
+    "Coal Ore": {
+      "description": "Coal Ore is a mineral block that drops coal when mined. A rarer variant, Deepslate Coal Ore, generates at the top of the deepslate layer.",
+      "variants": ["Coal Ore", "Deepslate Coal Ore"],
+      "properties": {
+        "renewable": false,
+        "stackable": 64,
+        "tool": "Pickaxe",
+        "blast_resistance": 3,
+        "hardness": {
+          "Coal Ore": 3.0,
+          "Deepslate Coal Ore": 4.5
+        },
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "silk_touch_required": true,
+          "fortune_applicable": true,
+          "drops": "Coal (1–4 with Fortune), 0–2 XP",
+          "breaking_times_sec": {
+            "Coal Ore": {
+              "default": 15.0,
+              "wooden_pickaxe": 2.25,
+              "stone_pickaxe": 1.15,
+              "iron_pickaxe": 0.75,
+              "diamond_pickaxe": 0.6,
+              "netherite_pickaxe": 0.5,
+              "golden_pickaxe": 0.4
+            },
+            "Deepslate Coal Ore": {
+              "default": 22.5,
+              "wooden_pickaxe": 3.4,
+              "stone_pickaxe": 1.7,
+              "iron_pickaxe": 1.15,
+              "diamond_pickaxe": 0.85,
+              "netherite_pickaxe": 0.75,
+              "golden_pickaxe": 0.6
+            }
+          }
+        },
+        "natural_generation": {
+          "Overworld_generation": [
+            {
+              "batch": 1,
+              "frequency": "30 times per chunk",
+              "range_Y": "136 to 320",
+              "blob_size": "0–37",
+              "distribution": "even"
+            },
+            {
+              "batch": 2,
+              "frequency": "20 times per chunk",
+              "range_Y": "0 to 192",
+              "blob_size": "0–37",
+              "distribution": "most common at Y=96, less common near ends",
+              "exposure_rule": "50% of air-exposed blocks do not generate"
+            }
+          ],
+          "deepslate_generation": "Very rare, below Y=8 by replacing tuff or deepslate",
+          "fossil_association": "May generate near underground fossils"
+        }
+      }
+    },
+    "Cobblestone": {
+      "description": "Cobblestone is a common block obtained from mining stone. It is primarily used for crafting and building. It has higher hardness than stone and requires a pickaxe to drop itself.",
+      "properties": {
+        "renewable": true,
+        "stackable": 64,
+        "tool": "Pickaxe",
+        "blast_resistance": 6,
+        "hardness": 2,
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "required_tool": "Pickaxe (any kind)",
+          "drops_self": true,
+          "drops_nothing_without_tool": true,
+          "breaking_times_sec": {
+            "default": 10.0,
+            "wooden_pickaxe": 1.5,
+            "stone_pickaxe": 0.75,
+            "iron_pickaxe": 0.5,
+            "diamond_pickaxe": 0.4,
+            "netherite_pickaxe": 0.35,
+            "golden_pickaxe": 0.25
+          }
+        },
+        "natural_generation": {
+          "structures": [
+            "Monster Rooms",
+            "Jungle Pyramids",
+            "Pillager Outposts",
+            "Ocean Ruins",
+            "Strongholds",
+            "Villages (Plains, Taiga, Snowy Plains, Desert, Savanna)",
+            "Woodland Mansions",
+            "Trail Ruins",
+            "Trial Chambers (around baby zombie spawners)"
+          ],
+          "special_spawn": {
+            "location": "(8, -61, 8)",
+            "condition": "Void preset Superflat world center"
+          }
+        },
+        "post_generation": {
+          "method": "Generated when flowing lava touches water",
+          "note": "If lava flows onto water from above, stone is created. Source lava touching water produces obsidian."
+        }
+      }
+    },
+    "Crafting Table": {
+      "description": "A crafting table is a utility block that allows access to a 3×3 crafting grid, unlocking the full set of crafting recipes in the game.",
+      "properties": {
+        "renewable": true,
+        "stackable": 64,
+        "tool": "Axe (preferred)",
+        "blast_resistance": 2.5,
+        "hardness": 2.5,
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": true
+      },
+      "obtaining": {
+        "breaking": {
+          "can_break_by_hand": true,
+          "preferred_tool": "Axe",
+          "breaking_times_sec": {
+            "default": 3.75,
+            "wooden_axe": 1.9,
+            "stone_axe": 0.95,
+            "iron_axe": 0.65,
+            "diamond_axe": 0.5,
+            "netherite_axe": 0.45,
+            "golden_axe": 0.35
+          }
+        },
+        "natural_generation": [
+          "Witch Huts",
+          "Igloos",
+          "Trail Ruins",
+          "Tents outside Pillager Outposts",
+          "Trial Chambers (Intersection 2 hidden chamber)",
+          "Village Houses (Savanna, Desert, Taiga)"
+        ],
+        "crafting": {
+          "ingredients": ["Any Planks (4)"],
+          "output": "Crafting Table (1)"
+        }
+      }
+    },
+    "Furnace": {
+      "description": "A furnace is a utility block used for smelting and cooking items using fuel. It emits light when active and has a distinct interface for processing items.",
+      "properties": {
+        "renewable": true,
+        "stackable": 64,
+        "tool": "Pickaxe",
+        "blast_resistance": 3.5,
+        "hardness": 3.5,
+        "luminous": true,
+        "light_level_when_active": 13,
+        "transparent": "Partial (when active)",
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "required_tool": "Pickaxe",
+          "drops_self": true,
+          "drops_contents": true,
+          "breaking_times_sec": {
+            "default": 17.5,
+            "wooden_pickaxe": 2.65,
+            "stone_pickaxe": 1.35,
+            "iron_pickaxe": 0.9,
+            "diamond_pickaxe": 0.7,
+            "netherite_pickaxe": 0.6,
+            "golden_pickaxe": 0.45
+          }
+        },
+        "natural_generation": [
+          "Village Weaponsmith Houses (Plains, Desert, Savanna, Snowy, Taiga)",
+          "Snowy Village Houses",
+          "Ancient Cities",
+          "Trail Ruins",
+          "Igloos"
+        ],
+        "generated_loot": [
+          {
+            "structure": "Village",
+            "container": "Snowy house chest",
+            "quantity": 1,
+            "chance_percent": 9.9
+          }
+        ],
+        "crafting": {
+          "ingredients": ["8x Cobblestone or variants (e.g., Blackstone, Cobbled Deepslate)"],
+          "output": "Furnace (1)"
+        }
+      }
+    },
+    "Gold Ore": {
+      "description": "Gold ore is a rare mineral block found underground. When mined with an iron pickaxe or better, it drops raw gold. It has a deepslate variant that generates in lower layers and tuff/deepslate areas.",
+      "variants": ["Gold Ore", "Deepslate Gold Ore"],
+      "properties": {
+        "renewable": false,
+        "stackable": 64,
+        "tool": "Iron Pickaxe or better",
+        "blast_resistance": 3,
+        "hardness": {
+          "Gold Ore": 3.0,
+          "Deepslate Gold Ore": 4.5
+        },
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "required_tool": "Iron Pickaxe or better",
+          "silk_touch_drops_self": true,
+          "fortune_effect": true,
+          "fortune_drops": {
+            "I": "1–2 raw gold",
+            "II": "1–3 raw gold",
+            "III": "1–4 raw gold"
+          },
+          "breaking_times_sec": {
+            "Gold Ore": {
+              "default": 15.0,
+              "wooden": 7.5,
+              "stone": 3.75,
+              "iron": 0.75,
+              "diamond": 0.6,
+              "netherite": 0.5,
+              "golden": 1.25
+            },
+            "Deepslate Gold Ore": {
+              "default": 22.5,
+              "wooden": 11.25,
+              "stone": 5.65,
+              "iron": 1.15,
+              "diamond": 0.85,
+              "netherite": 0.75,
+              "golden": 1.9
+            }
+          }
+        },
+        "natural_generation": {
+          "Overworld_batches": [
+            {
+              "frequency": "4 times per chunk",
+              "range_Y": "-64 to 32",
+              "optimal_layer": "-16",
+              "blob_size": "0–13",
+              "exposure_reduction": "50%"
+            },
+            {
+              "frequency": "1/2 chance per chunk",
+              "range_Y": "-64 to -48",
+              "blob_size": "0–13",
+              "exposure_reduction": "50%"
+            }
+          ],
+          "badlands_extra_batch": {
+            "frequency": "50 times per chunk",
+            "range_Y": "32 to 256",
+            "blob_size": "0–13",
+            "exposure_reduction": "none"
+          },
+          "replacement_blocks": [
+            "Stone", "Andesite", "Diorite", "Granite", "Tuff", "Deepslate"
+          ],
+          "deepslate_conversion": "If gold ore replaces tuff or deepslate, it becomes Deepslate Gold Ore"
+        }
+      }
+    },
+    "Diamond Ore": {
+      "description": "Diamond ore is a rare mineral block found deep underground that drops diamonds when mined. Its deepslate variant is more common due to deeper generation levels.",
+      "variants": ["Diamond Ore", "Deepslate Diamond Ore"],
+      "properties": {
+        "renewable": false,
+        "stackable": 64,
+        "tool": "Iron Pickaxe or better",
+        "blast_resistance": 3,
+        "hardness": {
+          "Diamond Ore": 3.0,
+          "Deepslate Diamond Ore": 4.5
+        },
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "required_tool": "Iron Pickaxe or better",
+          "silk_touch_drops_self": true,
+          "fortune_effect": true,
+          "fortune_drops": {
+            "I": "Avg. 1.33 diamonds",
+            "II": "Avg. 1.75 diamonds",
+            "III": "Avg. 2.2 diamonds"
+          },
+          "breaking_times_sec": {
+            "Diamond Ore": {
+              "default": 15.0,
+              "wooden": 7.5,
+              "stone": 3.75,
+              "iron": 0.75,
+              "diamond": 0.6,
+              "netherite": 0.5,
+              "golden": 1.25
+            },
+            "Deepslate Diamond Ore": {
+              "default": 22.5,
+              "wooden": 11.25,
+              "stone": 5.65,
+              "iron": 1.15,
+              "diamond": 0.85,
+              "netherite": 0.75,
+              "golden": 1.9
+            }
+          }
+        },
+        "natural_generation": {
+          "batches": [
+            {
+              "blobs": "7 blobs of 1–5 ores per chunk",
+              "range_Y": "Y=14 to Y=-63",
+              "air_exposure_chance": "50%"
+            },
+            {
+              "blobs": "1 blob of 1–23 ores every 1/9 chunks",
+              "range_Y": "Y=14 to Y=-63",
+              "air_exposure_chance": "70%"
+            },
+            {
+              "blobs": "4 blobs of 1–10 ores per chunk",
+              "range_Y": "Y=14 to Y=-63",
+              "air_exposure_chance": "100%"
+            },
+            {
+              "blobs": "2 blobs of 1–10 ores per chunk",
+              "range_Y": "Y=-4 to Y=-63",
+              "air_exposure_chance": "50%"
+            }
+          ],
+          "replacement_blocks": [
+            "Stone", "Andesite", "Diorite", "Granite", "Tuff", "Deepslate"
+          ],
+          "deepslate_conversion": "Ore becomes Deepslate Diamond Ore when replacing tuff or deepslate",
+          "fossil_integration": "Deepslate Diamond Ore can generate replacing bone blocks in fossils below Y=0"
+        }
+      }
+    },
+    "Iron Ore": {
+      "description": "Iron ore is a mineral block found underground that drops raw iron when mined. It is commonly found at a wide range of altitudes and has a deepslate variant in lower layers.",
+      "variants": ["Iron Ore", "Deepslate Iron Ore"],
+      "properties": {
+        "renewable": false,
+        "stackable": 64,
+        "tool": "Stone Pickaxe or better",
+        "blast_resistance": 3,
+        "hardness": {
+          "Iron Ore": 3.0,
+          "Deepslate Iron Ore": 4.5
+        },
+        "luminous": false,
+        "transparent": false,
+        "flammable": false,
+        "catches_fire_from_lava": false
+      },
+      "obtaining": {
+        "breaking": {
+          "required_tool": "Stone Pickaxe or better",
+          "silk_touch_drops_self": true,
+          "fortune_effect": true,
+          "fortune_drops": {
+            "I": "1–2 raw iron",
+            "II": "1–3 raw iron",
+            "III": "1–4 raw iron"
+          },
+          "breaking_times_sec": {
+            "Iron Ore": {
+              "default": 15.0,
+              "wooden": 7.5,
+              "stone": 1.15,
+              "iron": 0.75,
+              "diamond": 0.6,
+              "netherite": 0.5,
+              "golden": 1.25
+            },
+            "Deepslate Iron Ore": {
+              "default": 22.5,
+              "wooden": 11.25,
+              "stone": 1.7,
+              "iron": 1.15,
+              "diamond": 0.85,
+              "netherite": 0.75,
+              "golden": 1.9
+            }
+          }
+        },
+        "natural_generation": {
+          "batches": [
+            {
+              "frequency": "90 times per chunk",
+              "range_Y": "80 to 384",
+              "optimal_layer": 232,
+              "blob_size": "0–13 (JE)"
+            },
+            {
+              "frequency": "10 times per chunk",
+              "range_Y": "-24 to 56",
+              "optimal_layer": 16,
+              "blob_size": "0–13 (JE)"
+            },
+            {
+              "frequency": "10 times per chunk",
+              "range_Y": "-64 to 72",
+              "blob_size": "0–5"
+            }
+          ],
+          "replacement_blocks": [
+            "Stone", "Andesite", "Diorite", "Granite", "Tuff", "Deepslate"
+          ],
+          "deepslate_conversion": "Ore becomes Deepslate Iron Ore when replacing tuff or deepslate",
+          "ore_veins": "Can generate as large ore veins below Y=0, including raw iron blocks and tuff"
+        }
+      }
+    },
+    "Iron Axe": {
+      "description": "An iron axe is a mid-tier tool used to efficiently break wood-based blocks and also functions as a powerful melee weapon capable of disabling shields.",
+      "properties": {
+        "rarity": "Common",
+        "durability": 250,
+        "renewable": true,
+        "stackable": false,
+        "attack_damage": 9,
+        "attack_speed": 0.9
+      },
+      "obtaining": {
+        "crafting": {
+          "ingredients": [
+            "3x Iron Ingot",
+            "2x Stick"
+          ],
+          "output": "Iron Axe (1)"
+        },
+        "generated_loot": [
+          {
+            "structure": "Ocean Ruins",
+            "containers": [
+              {
+                "type": "Warm ruins suspicious sand",
+                "item": "Iron Axe",
+                "chance_percent": 6.7
+              },
+              {
+                "type": "Cold ruins suspicious gravel",
+                "item": "Iron Axe",
+                "chance_percent": 6.7
+              }
+            ]
+          },
+          {
+            "structure": "Trial Chambers",
+            "containers": [
+              {
+                "type": "Corridor chest",
+                "item": "Enchanted Iron Axe",
+                "chance_percent": 10.2
+              },
+              {
+                "type": "Vault and reward chest",
+                "item": "Enchanted Iron Axe",
+                "chance_percent": 7.0
+              }
+            ]
+          }
+        ],
+        "mob_loot": {
+          "vindicator_drop": {
+            "base_chance_percent": 8.5,
+            "looting_bonus": {
+              "Looting I": 9.5,
+              "Looting II": 10.5,
+              "Looting III": 11.5
+            },
+            "note": "Iron axe may be enchanted and heavily damaged."
+          },
+          "raid_drop_bedrock": {
+            "chance_percent": {
+              "normal": 4.1,
+              "hard": 5.12
+            },
+            "note": "From Vindicators or Pillagers during raids, possibly enchanted."
+          }
+        },
+        "trading": [
+          {
+            "villager": "Journeyman Toolsmith",
+            "chance_percent": {
+              "JE": 40,
+              "BE": 25
+            },
+            "cost": "6–20 Emeralds",
+            "item": "Enchanted Iron Axe"
+          },
+          {
+            "villager": "Novice Weaponsmith",
+            "chance_percent": {
+              "JE": 67,
+              "BE": 100
+            },
+            "cost": "3 Emeralds",
+            "item": "Iron Axe"
+          }
+        ],
+        "villager_gift": {
+          "villager": "Weaponsmith",
+          "condition": "Hero of the Village effect",
+          "item": "Iron Axe",
+          "version": "Java Edition only"
+        }
+      }
+    },
+    "Iron Ingot": {
+      "description": "An iron ingot is a common metal ingot smelted from raw iron or crafted from other iron-based materials. It is widely used to craft tools, armor, and various utility blocks.",
+      "properties": {
+        "rarity": "Common",
+        "renewable": true,
+        "stackable": 64
+      },
+      "obtaining": {
+        "crafting": [
+          {
+            "input": "1x Block of Iron",
+            "output": "9x Iron Ingot"
+          },
+          {
+            "input": "9x Iron Nugget",
+            "output": "1x Iron Ingot"
+          }
+        ],
+        "smelting": [
+          {
+            "input": ["Iron Ore", "Deepslate Iron Ore"],
+            "fuel": "Any",
+            "output": "1x Iron Ingot",
+            "experience": 0.7
+          },
+          {
+            "input": "Raw Iron",
+            "fuel": "Any",
+            "output": "1x Iron Ingot",
+            "experience": 0.7
+          }
+        ]
+      }
+    },
+    "Stone Axe": {
+      "description": "A stone axe is a second-tier tool used to efficiently break wood-based blocks. It also functions as a melee weapon capable of disabling shields in combat.",
+      "properties": {
+        "rarity": "Common",
+        "durability": 131,
+        "renewable": true,
+        "stackable": false,
+        "attack_damage": 9,
+        "attack_speed": 0.8
+      },
+      "obtaining": {
+        "crafting": {
+          "ingredients": [
+            "2x Stick",
+            "3x Any stone-tier block (e.g., Cobblestone, Blackstone)"
+          ],
+          "output": "Stone Axe (1)"
+        },
+        "generated_loot": [
+          {
+            "structure": "Bonus Chest",
+            "container": "Chest",
+            "item": "Stone Axe",
+            "chance_percent": 25
+          },
+          {
+            "structure": "Igloo",
+            "container": "Chest",
+            "item": "Stone Axe",
+            "chance_percent": 14.7
+          },
+          {
+            "structure": "Underwater Ruins",
+            "container": "Small ruins chest",
+            "item": "Stone Axe",
+            "chance_percent": 30.2
+          },
+          {
+            "structure": "Trial Chambers",
+            "container": "Corridor chest",
+            "item": "Damaged Stone Axe",
+            "chance_percent": 19.6,
+            "note": "Has 15%–80% durability"
+          }
+        ],
+        "trading": [
+          {
+            "villager": "Novice Toolsmith",
+            "chance_percent": {
+              "JE": 40
+            },
+            "cost": "1 Emerald",
+            "item": "Stone Axe"
+          }
+        ],
+        "villager_gift": {
+          "villager": ["Toolsmith", "Weaponsmith"],
+          "condition": "Hero of the Village effect",
+          "item": "Stone Axe",
+          "version": "Java Edition only"
+        }
+      }
+    },
+    "Wooden Axe": {
+      "description": "A wooden axe is the lowest-tier axe in Minecraft. It is primarily used to break wood-based blocks and as a melee weapon with decent damage but low durability.",
+      "properties": {
+        "rarity": "Common",
+        "durability": 59,
+        "renewable": true,
+        "stackable": false,
+        "attack_damage": 7,
+        "attack_speed": 0.8
+      },
+      "obtaining": {
+        "crafting": {
+          "ingredients": [
+            "3x Any Planks",
+            "2x Stick"
+          ],
+          "output": "Wooden Axe (1)"
+        },
+        "generated_loot": [
+          {
+            "structure": "Bonus Chest",
+            "container": "Chest",
+            "item": "Wooden Axe",
+            "chance_percent": 75
+          },
+          {
+            "structure": "Trial Chambers",
+            "container": "Entrance chest",
+            "item": "Wooden Axe",
+            "chance_percent": 55.1
+          }
+        ]
+      }
+    },
+    "Wooden Pickaxe": {
+      "description": "A wooden pickaxe is the most basic pickaxe in Minecraft. It is used to mine stone-type blocks and can also be used as a weapon.",
+      "properties": {
+        "rarity": "Common",
+        "durability": 59,
+        "renewable": true,
+        "stackable": false,
+        "attack_damage": 2,
+        "attack_speed": 1.2
+      },
+      "obtaining": {
+        "crafting": {
+          "ingredients": [
+            "3x Any Planks",
+            "2x Stick"
+          ],
+          "output": "Wooden Pickaxe (1)"
+        },
+        "generated_loot": [
+          {
+            "structure": "Bonus Chest",
+            "container": "Chest",
+            "item": "Wooden Pickaxe",
+            "chance_percent": 75
+          }
+        ]
+      }
+    },
+    "Stick": {
+      "description": "A stick is a common crafting ingredient used to make tools, weapons, and various items.",
+      "properties": {
+        "rarity": "Common",
+        "renewable": true,
+        "stackable": true,
+        "stack_size": 64
+      },
+      "obtaining": {
+        "crafting": [
+          {
+            "ingredients": ["2x Any Planks"],
+            "output": "4x Stick"
+          },
+          {
+            "ingredients": ["2x Bamboo"],
+            "output": "1x Stick"
+          }
+        ]
+      }
+    }
+  }
+  
