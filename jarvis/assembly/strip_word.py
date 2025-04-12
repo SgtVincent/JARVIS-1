@@ -58,9 +58,9 @@ def parse_three_logs(inventory_line, equipment_line, height_line):
     return inventory, equipment, current_height
 
 if __name__ == "__main__":
-    line1 = "{'Now my inventory has 1 furnace, 3 oak_sapling, 2 oak_log, 1 wheat_seeds, 5 stick, 1 oak_planks, 1 crafting_table, 1 iron_axe, 6 dirt, 1 wooden_pickaxe, 1 stone_pickaxe.'}"
-    line2 = "{'Now I equip the furnace in mainhand.'}"
-    line3 = "{'Now I locate in height of 49.'}"
+    line1 = "{'Now my inventory has 1 wooden_pickaxe, 3 oak_planks, 4 dirt, 2 stick, 1 oak_log, 1 iron_axe.'}"
+    line2 = "{'Now I equip the wooden_pickaxe in mainhand.'}"
+    line3 = "{'Now I locate in height of 59.'}"
 
     inv, equip, height = parse_three_logs(line1, line2, line3)
     print(inv)
