@@ -4,6 +4,10 @@ import random
 import time
 import openai
 import json
+import os
+import subprocess
+from typing import List, Dict
+from .strip_word import parse_three_logs
 
 def translate_task(task):
     return f"Obtain {task}"
@@ -49,6 +53,63 @@ def parse_action_index(text):
     # Return None if "Action:" is not found
     return None
 
+def gen_problem_pddl(task,info):
+    print({translate_inventory(info)})
+    print({translate_equipment(info)})
+    print({translate_height(info)})
+    test_inventory, test_equipment, test_height = parse_three_logs(str({translate_inventory(info)}), str({translate_equipment(info)}), str({translate_height(info)}))
+    print(test_inventory)
+    print(test_equipment)
+    print(test_height)
+    problem_file = generate_problem_pddl(task, test_inventory, test_equipment, test_height, 'action pddl')
+
+def parse_plan_actions(plan: List[str], task: str):
+    if not plan:
+        return {
+            "text": f"get {task}",
+            "type": "mine",
+            "object_item": None
+        }
+    actions = []
+    for line in plan:
+        line = line.strip()
+        if line.lower().startswith("plan-length"):
+            break
+        if line.startswith("0."):
+            start_idx = line.index("(") + 1
+            end_idx = line.index(")")
+            action = line[start_idx:end_idx]
+            actions.append(action)
+    if not actions:
+        return {
+            "text": f"get {task}",
+            "type": "mine",
+            "object_item": None
+        }
+    if 'equip' in actions[0]:
+        if 'stone' in actions[0]:
+            return {
+            "text": f"{actions[0]}",
+            "type": "equip",
+            "object_item": "stone_pickaxe"
+            }
+        elif 'wooden' in actions[0]:
+            return {
+            "text": f"{actions[0]}",
+            "type": "equip",
+            "object_item": "wooden_pickaxe"
+            }
+        else:
+            x = random.choice(skills[task])
+            x["text"] = actions[0]
+            return x
+    return {
+            "text": f"{actions[0]}",
+            "type": "mine",
+            "object_item": None
+            }
+
+
 def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
     skill_content = ""
     if task not in skills.keys():
@@ -64,6 +125,9 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
     print("+++++++++++++++++++++++++++Before LLM++++++++++++++++++++++++++++++++++")
     print("skill_content:",skill_content)
     query = f"Task: {translate_task(task)}.\nSkills: {skill_content}\nAgent State: {translate_inventory(info)} {translate_equipment(info)} {translate_height(info)}"
+    # print({translate_inventory(info)})
+    # print({translate_equipment(info)})
+    # print({translate_height(info)})
     print("query: ", query)
     
     retries = 0
@@ -121,6 +185,7 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
     action_index = parse_action_index(response.choices[0].message.content)
     if not action_index or action_index > len( skills[task]): # if no action or action beyond task skills
         return random.choice(skills[task])
+    print("lll",skills[task][action_index-1])
     return skills[task][action_index-1]
 
 # evaluate plan
@@ -410,6 +475,9 @@ def validate_plan(plan):
 
 
 
+
+
+
 def detect_item_dependencies(target_item: str, llm_model="qwen-max") -> list:
 
     system_prompt = (
@@ -428,7 +496,7 @@ def detect_item_dependencies(target_item: str, llm_model="qwen-max") -> list:
 
         "If the user wants to obtain any item that involves these resources, ensure the correct pickaxe tier in the correct order.\n"
         "Additionally, consider that to craft or smelt, you also need the prerequisites like a crafting_table, furnace, etc. in a sensible sequence.\n\n"
-
+        "If the target item is crafting_table, just output crafting_table because no previous items required"
         "When the user states an item, you must list ALL required items in an ordered JSON array, from earliest to final.\n"
         "For example, if the user wants an iron pickaxe, the sequence might be:\n"
         "   [\"crafting_table\",\"wooden_pickaxe\",\"stone_pickaxe\",\"furnace\",\"iron_pickaxe\"].\n"
@@ -475,88 +543,7 @@ def check_items(item_list):
     print("All items are valid.")
     return True
 
-# def get_plan(final_goal, info, recipes_data, max_retries=2):
-#     def build_prompt(final_goal_text, recipe_summary, inventory_text, equipment_text, height_text, error_reason=None):
-#         base_query = (
-#             f"My current inventory state: {inventory_text}\n"
-#             f"{equipment_text}\n"
-#             f"{height_text}\n"
-#             f"I want to obtain {final_goal_text} in Minecraft step by step.\n\n"
-#             f"Here is relevant crafting info derived from the JSON:\n"
-#             f"{recipe_summary}\n"
-#             "Now please generate a plan as a Python list of subgoals.\n"
-#             "Each subgoal is a dict with keys: goal, type, text.\n"
-#             "Valid 'type' must be one of [mine, craft, smelt].\n"
-#             "For example: [{\"goal\": {\"oak_log\": 4}, \"type\": \"mine\", \"text\": \"oak_log\"}, ... ]\n"
-#             "Do not include extra explanation. Only output the JSON list.\n"
-#             "The example is just a format you need follow, don't replicate it exactly.\n"
-#             "For crafting planks, you can use any type of logs (oak_log, spruce_log, birch_log, etc.) to get the same result. Please do not limit yourself to oak_log if other logs are available. Just use logs\n"
-#             "Pay attention word should be exact like 'logs' is valid but 'log' not.\n"
-#
-#         )
-#         if error_reason:
-#             base_query += f"\n[WARNING] Your last output was invalid: {error_reason}\n"
-#             base_query += "Please correct and return a valid JSON plan.\n"
-#         return base_query
-#
-#     inventory_text = translate_inventory(info)
-#     equipment_text = translate_equipment(info)
-#     height_text = translate_height(info)
-#
-#     if isinstance(final_goal, dict):
-#         final_goal_text = ", ".join([f"{v} {k}" for k, v in final_goal.items()])
-#         main_item = list(final_goal.keys())[0]
-#     else:
-#         final_goal_text = f"1 {final_goal}"
-#         main_item = final_goal
-#
-#     recipe_summary = summarize_recipe(main_item, recipes_data)
-#     print("recipe_summary:",recipe_summary)
-#
-#     plan = None
-#     error_reason = None
-#
-#     for attempt in range(max_retries):
-#         query = build_prompt(final_goal_text, recipe_summary, inventory_text, equipment_text, height_text, error_reason)
-#
-#         response = client.chat.completions.create(
-#             model="qwen-max",
-#             messages=[
-#                 {
-#                     "role": "system",
-#                     "content": "You are a helpful assistant in Minecraft. Please produce a multi-step plan in JSON format. No additional text."
-#                 },
-#                 {
-#                     "role": "user",
-#                     "content": query
-#                 }
-#             ],
-#             temperature=0.7,
-#             max_tokens=512,
-#             top_p=1,
-#             frequency_penalty=0,
-#             presence_penalty=0
-#         )
-#
-#         raw_output = response.choices[0].message.content.strip()
-#         print(f"LLM raw output for plan (attempt {attempt+1}):", raw_output)
-#
-#         try:
-#             candidate_plan = json.loads(raw_output)
-#         except json.JSONDecodeError:
-#             error_reason = "JSON parse error"
-#             continue
-#         valid, reason = validate_plan(candidate_plan)
-#         if valid:
-#             plan = candidate_plan
-#             break
-#         else:
-#             error_reason = reason
-#
-#     if plan is None:
-#         plan = [{"goal": {str(final_goal): 1}, "type": "mine", "text": f"{final_goal}"}]
-#
-#     return plan
+
 
 def get_plan(final_goal_list, info, recipes_data, max_retries=2):
     if isinstance(final_goal_list, str):
@@ -638,14 +625,12 @@ def get_plan(final_goal_list, info, recipes_data, max_retries=2):
         raw_output = response.choices[0].message.content.strip()
         print(f"LLM raw output for plan (attempt {attempt + 1}):", raw_output)
 
-        # 尝试解析 JSON
         try:
             candidate_plan = json.loads(raw_output)
         except json.JSONDecodeError:
             error_reason = "JSON parse error"
             continue
 
-        # type in [mine, craft, smelt]
         valid, reason = validate_plan(candidate_plan)
         if valid:
             plan = candidate_plan
@@ -653,9 +638,7 @@ def get_plan(final_goal_list, info, recipes_data, max_retries=2):
         else:
             error_reason = reason
 
-    # 如果最终还是不行，fallback 到一个最简单的plan
     if plan is None:
-        # 简单地拿 final_goal_list 的第一个当成 fallback
         fallback_item = final_goal_list[0]
         plan = [{"goal": {fallback_item: 1}, "type": "mine", "text": f"{fallback_item}"}]
 
@@ -700,6 +683,218 @@ def get_task_and_text_llm(user_input: str):
         return parsed
     except:
         return {"task": "unknown", "text": "Could not parse LLM output."}
+
+TASK_SKILLS_MAP = {
+    "logs": [
+        "chop down the tree",
+        "equip iron axe to chop down the tree"
+    ],
+    "cobblestone": [
+        "equip wooden_pickaxe",
+        "dig down"
+    ],
+    "iron_ore": [
+        "dig down",
+        "equip stone pickaxe",
+        "break iron_ore blocks",
+        "break iron blocks",
+        "break the stone blocks and mine iron ore"
+    ]
+}
+
+SKILL_PRECONDS = {
+    "chop down the tree": "",
+    "equip iron axe to chop down the tree": "(<= 1 (count minecraft_iron_axe))",
+    "equip wooden_pickaxe": "(<= 1 (count minecraft_wooden_pickaxe))",
+    "dig down": "(or (equipped minecraft_wooden_pickaxe) (equipped minecraft_stone_pickaxe))",
+    "equip stone pickaxe": "(<= 1 (count minecraft_stone_pickaxe))",
+    "break iron_ore blocks": "(equipped minecraft_stone_pickaxe)",
+    "break iron blocks": "(equipped minecraft_stone_pickaxe)",
+    "break the stone blocks and mine iron ore": "(equipped minecraft_stone_pickaxe)"
+}
+
+SKILL_CUSTOM_RULES = {
+    "dig down": {
+        "extra_pre": "(> (agent_height) 15)",
+        "extra_eff": "(decrease (agent_height) 5)"
+    },
+    "break iron_ore blocks": {
+        "extra_pre": "(<= (agent_height) 15)",
+        "extra_eff": ""
+    },
+    "break iron blocks": {
+        "extra_pre": "(<= (agent_height) 15)",
+        "extra_eff": ""
+    },
+    "break the stone blocks and mine iron ore": {
+        "extra_pre": "(<= (agent_height) 15)",
+        "extra_eff": ""
+    }
+}
+
+SKILL_EFFECT_ITEMS = {
+    "chop down the tree": "minecraft_logs",
+    "equip iron axe to chop down the tree": "(equipped minecraft_iron_axe)",
+    "equip wooden_pickaxe": "(equipped minecraft_wooden_pickaxe)",
+    "dig down": ["minecraft_cobblestone", "minecraft_iron_ore"],
+    "equip stone pickaxe": "(equipped minecraft_stone_pickaxe)",
+    "break iron_ore blocks": "minecraft_iron_ore",
+    "break iron blocks": "minecraft_iron_ore",
+    "break the stone blocks and mine iron ore": "minecraft_iron_ore"
+}
+
+def solve_pddl(domain_file: str, problem_file: str) -> List[str]:
+    JAVA17_PATH = "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
+    ENHSP_JAR = "/home/liangjunyi/NUS/JARVIS-1/lby/json_for_pddl/enhsp.jar"
+    try:
+        result = subprocess.run(
+            [
+                JAVA17_PATH,
+                "-jar",
+                ENHSP_JAR,
+                "-o", domain_file,
+                "-f", problem_file
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        print("=== Return code ===")
+        print(result.returncode)
+        print("=== STDOUT ===")
+        print(result.stdout)
+        print("=== STDERR ===")
+        print(result.stderr)
+        if result.returncode != 0:
+            print("Solver failed. Stderr:")
+            print(result.stderr)
+            return []
+        lines = result.stdout.splitlines()
+        plan_lines = []
+        plan_started = False
+        for line in lines:
+            if plan_started:
+                if line.strip():
+                    plan_lines.append(line.strip())
+            if line.strip().startswith("0."):
+                plan_started = True
+                plan_lines.append(line.strip())
+        return plan_lines
+    except Exception as e:
+        print("ENHSP failed:", e)
+        return []
+
+def generate_domain_pddl_all_skills(folder: str) -> str:
+    os.makedirs(folder, exist_ok=True)
+    all_skills = set()
+    for skill_list in TASK_SKILLS_MAP.values():
+        all_skills.update(skill_list)
+    all_skills.update(SKILL_PRECONDS.keys())
+    all_skills.update(SKILL_CUSTOM_RULES.keys())
+
+    action_blocks = []
+    for skill_name in sorted(all_skills):
+        base_pre = SKILL_PRECONDS.get(skill_name, "").strip()
+        custom_rule = SKILL_CUSTOM_RULES.get(skill_name, {})
+        extra_pre = custom_rule.get("extra_pre", "").strip()
+        pre_list = []
+        if base_pre:
+            pre_list.append(base_pre)
+        if extra_pre:
+            pre_list.append(extra_pre)
+        if pre_list:
+            pre_str = "(and " + " ".join(pre_list) + ")"
+        else:
+            pre_str = "(and)"
+
+        item_to_increase = SKILL_EFFECT_ITEMS.get(skill_name, "")
+        eff_list = []
+        if isinstance(item_to_increase, str):
+            # 如果是字符串, 可能是 "(equipped minecraft_iron_axe)" 或 "minecraft_logs"
+            if item_to_increase.startswith("(equipped"):
+                eff_list.append(item_to_increase)
+            elif item_to_increase:
+                eff_list.append(f"(increase (count {item_to_increase}) 1)")
+        elif isinstance(item_to_increase, list):
+            # 若是列表, 表示要同时产出多种物品
+            for single_item in item_to_increase:
+                eff_list.append(f"(increase (count {single_item}) 1)")
+
+        extra_eff = custom_rule.get("extra_eff", "").strip()
+        if extra_eff:
+            eff_list.append(extra_eff)
+
+        if eff_list:
+            eff_str = "(and " + " ".join(eff_list) + ")"
+        else:
+            eff_str = "(and)"
+
+        action_name = skill_name.replace(" ", "_").replace(",", "")
+        action_pddl = f"""
+ (:action {action_name}
+  :parameters ()
+  :precondition {pre_str}
+  :effect {eff_str}
+ )
+"""
+        action_blocks.append(action_pddl)
+
+    actions_str = "\n".join(action_blocks)
+    domain_template = f"""(define (domain minecraft-domain)
+ (:requirements :strips :typing :numeric-fluents)
+ (:types item)
+ (:predicates (equipped ?tool - item))
+ (:functions (count ?item - item) (agent_height))
+
+ {actions_str}
+)
+"""
+    domain_file_path = os.path.join(folder, "domain.pddl")
+    with open(domain_file_path, "w") as f:
+        f.write(domain_template)
+    return domain_file_path
+
+def generate_problem_pddl(task: str, inventory: Dict[str, int], equipment: List[str], current_height: List[int], folder: str) -> str:
+    os.makedirs(folder, exist_ok=True)
+    object_list = set()
+    for item_name in inventory.keys():
+        mc_item = f"minecraft_{item_name}"
+        object_list.add(mc_item)
+    goal_item = f"minecraft_{task}"
+    object_list.add(goal_item)
+    object_str = " ".join(sorted(object_list)) + " - item"
+    init_lines = []
+    for item_name, count_val in inventory.items():
+        mc_item = f"minecraft_{item_name}"
+        init_lines.append(f"(= (count {mc_item}) {count_val})")
+    if task not in inventory:
+        init_lines.append(f"(= (count minecraft_{task}) 0)")
+    h_val = current_height[0] if current_height else 64
+    init_lines.append(f"(= (agent_height) {h_val})")
+    for eqp in equipment:
+        init_lines.append(f"(equipped minecraft_{eqp})")
+    init_str = "\n    ".join(init_lines)
+    goal_str = f"(<= 1 (count {goal_item}))"
+    problem_template = f"""(define (problem minecraft-problem)
+ (:domain minecraft-domain)
+ (:objects
+    {object_str}
+ )
+ (:init
+    {init_str}
+ )
+ (:goal (and
+    {goal_str}
+ ))
+)
+"""
+    problem_file_path = os.path.join(folder, "problem.pddl")
+    with open(problem_file_path, "w") as f:
+        f.write(problem_template)
+    return problem_file_path
+
+
+
 
 class JARVIS:
     def __init__(self, model = 'gpt-3.5-turbo'):
