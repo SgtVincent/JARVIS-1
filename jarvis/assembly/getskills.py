@@ -13,7 +13,6 @@ def get_tasks_data(task_list):
                 "task": task,
                 "skill_content": [f"get {task}"]
             })
-            l.append(f"get {task}")
             continue
 
         skill_group = skills[task]
@@ -30,15 +29,7 @@ def get_tasks_data(task_list):
                 "task": task,
                 "skill_content": skill_content
             })
-            l+=skill_content
     return results,l
-
-def remove_duplicates(lst):
-    unique_items = []
-    for item in lst:
-        if item not in unique_items:
-            unique_items.append(item)
-    return unique_items
 
 if __name__ == "__main__":
     my_tasks = [
@@ -54,7 +45,5 @@ if __name__ == "__main__":
         "iron_ingot",
         "iron_pickaxe"
     ]
-    data,l = get_tasks_data(my_tasks)
-    l = remove_duplicates(l)
+    data = get_tasks_data(my_tasks)
     print(json.dumps(data, indent=4, ensure_ascii=False))
-    print(l)
