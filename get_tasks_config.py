@@ -34,7 +34,7 @@ def build_env_yaml(env_config, biome_seed,save_config_name="tmp"):
     
     return env_yaml
 
-if __name__ == "__main__":
+def generate_from_spawn_json():
     biome_json ="/home/marmot/Boyang/JARVIS-1/jarvis/assets/spawn.json"
     with open(biome_json, 'r') as f:
         biome_configs = json.load(f)
@@ -51,10 +51,10 @@ if __name__ == "__main__":
 
 
     tasks_list = [
-        ("crafting_table", 68), 
-        ("wooden_pickaxe", 62),
-        ("stone_pickaxe", 68),
-        ("iron_pickaxe", 68)
+        ("crafting_table", 30), 
+        ("wooden_pickaxe", 30),
+        ("stone_pickaxe", 30),
+        ("iron_pickaxe", 30)
     ]
     
     t = 0
@@ -66,8 +66,9 @@ if __name__ == "__main__":
             task_config_dict = get_task_config(task_name)
             
             t %= n_biome
-            task_config_dict['env']['biome'] = biome_candidates[t]['biome']
+            biome, seed = biome_candidates[t]['biome'], biome_candidates[t]['seed']
 
+            task_config_dict['env']['biome'] = biome
             if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
                 task_config_dict['env']['init_inventory']={
                     0: {
@@ -80,5 +81,43 @@ if __name__ == "__main__":
             ###################################################
             config_yaml_name = f"{task_name}_{i}"
             task_env_setting = task_config_dict['env']
-            task_env_yaml = build_env_yaml(task_env_setting,biome_candidates[t]['seed'], config_yaml_name)
+            task_env_yaml = build_env_yaml(task_env_setting, seed, config_yaml_name)
             t += 1
+
+def load_task_biome_seed_txt(txt_path):
+    task_entries = []
+    with open(txt_path, 'r') as f:
+        for line in f:
+            task, biome, seed = line.strip().split()
+            task_entries.append((task, biome, int(seed)))
+    return task_entries
+
+def generate_from_txt(txt_path):
+    task_biome_seed_list = load_task_biome_seed_txt(txt_path)
+
+    counter = {}
+    for task_name, biome, seed in task_biome_seed_list:
+        task_config_dict = get_task_config(task_name)
+        task_config_dict['env']['biome'] = biome
+
+        if task_name in ["stone_pickaxe", "iron_pickaxe", "diamond"]:
+            task_config_dict['env']['init_inventory'] = {
+                0: {
+                    "type": "iron_axe",
+                    "quantity": 1
+                }
+            }
+        else:
+            task_config_dict['env']['init_inventory'] = {}
+
+        # name the config based on task and number of times it's been seen
+        count = counter.get(task_name, 0)
+        config_yaml_name = f"{task_name}_{count}"
+        counter[task_name] = count + 1
+
+        task_env_setting = task_config_dict['env']
+        task_env_yaml = build_env_yaml(task_env_setting, seed, config_yaml_name)
+
+if __name__ == "__main__":
+    # generate_from_spawn_json()
+    generate_from_txt("task_biome_seed.txt")
