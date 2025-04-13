@@ -8,7 +8,7 @@ import yaml
 # Ensure reproducibility
 random.seed(42)
 
-ENV_CONFIG_DIR = "/home/marmot/Boyang/JARVIS-1/lby/global_configs/envs"
+ENV_CONFIG_DIR = "lby/global_configs/envs"
 
 def build_env_yaml(env_config, biome_seed,save_config_name="tmp"):
     with open(os.path.join(ENV_CONFIG_DIR, "jarvis.yaml"), 'r') as f:
@@ -35,7 +35,7 @@ def build_env_yaml(env_config, biome_seed,save_config_name="tmp"):
     return env_yaml
 
 def generate_from_spawn_json():
-    biome_json ="/home/marmot/Boyang/JARVIS-1/jarvis/assets/spawn.json"
+    biome_json ="jarvis/assets/spawn.json"
     with open(biome_json, 'r') as f:
         biome_configs = json.load(f)
 

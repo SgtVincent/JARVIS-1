@@ -18,7 +18,7 @@ from functools import partial
 from rich import print as rprint
 import yaml
 
-ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
+ENV_CONFIG_DIR = "lby/global_configs/envs"
 
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
@@ -70,7 +70,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     mark.record_infos = mark.post_infos([env.step(env.noop_action())[-1]])
     print('mark.record_infos', mark.record_infos)
 
-    json_path = "/home/liangjunyi/NUS/JARVIS-1/jarvis/assets/cared_recipies.json"
+    json_path = "jarvis/assets/cared_recipies.json"
     with open(json_path, "r") as f:
         recipes_data = json.load(f)
 
@@ -195,7 +195,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["iron_pickaxe"],
+        default=["crafting_table", "wooden_pickaxe","stone_pickaxe","iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
+    output_file = f"lby/eval_{args.llm_type}_pddl_act.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     generate_domain_pddl_all_skills('action pddl')
     with open(output_file, 'a') as f_out:
