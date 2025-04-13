@@ -19,7 +19,7 @@ import yaml
 from lby.pddl_gen import extract_primitive_steps, write_domain_and_problem
 from collections import defaultdict
 
-ENV_CONFIG_DIR = "/home/marmot/Boyang/JARVIS-1/lby/global_configs/envs"
+ENV_CONFIG_DIR = "lby/global_configs/envs"
 
 def step_pddl_to_txt(pddl_txt):
     start = pddl_txt.index('(')
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     if not args.if_debug:
         task_yamls = os.listdir(ENV_CONFIG_DIR)
         # eval for list of task
-        output_file = f"/home/marmot/Boyang/JARVIS-1/lby/eval_{args.llm_type}_pddl.txt"
+        output_file = f"lby/eval_{args.llm_type}_pddl.txt"
         file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
         with open(output_file,'a') as f_out:
             if not file_exists:

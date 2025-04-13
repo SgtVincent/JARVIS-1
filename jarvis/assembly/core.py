@@ -184,9 +184,9 @@ def get_skill(task, info, llm_model="gpt-3.5-turbo", max_retries=5):
     print("LLM output:",response.choices[0].message.content)
     action_index = parse_action_index(response.choices[0].message.content)
     if not action_index or action_index > len( skills[task]): # if no action or action beyond task skills
-        return random.choice(skills[task])
+        return random.choice(skills[task]), response.usage
     print("lll",skills[task][action_index-1])
-    return skills[task][action_index-1]
+    return skills[task][action_index-1], response.usage
 
 # evaluate plan
 def translate_plan(current_plan):
@@ -545,7 +545,7 @@ def check_items(item_list):
 
 
 
-def get_plan(final_goal_list, info, recipes_data, max_retries=2):
+def get_plan(final_goal_list, info, recipes_data, llm_model="gpt-3.5-turbo", max_retries=2):
     if isinstance(final_goal_list, str):
         final_goal_list = [final_goal_list]
 
@@ -604,7 +604,7 @@ def get_plan(final_goal_list, info, recipes_data, max_retries=2):
         )
 
         response = client.chat.completions.create(
-            model="qwen-max",
+            model= llm_model,
             messages=[
                 {
                     "role": "system",
@@ -642,7 +642,7 @@ def get_plan(final_goal_list, info, recipes_data, max_retries=2):
         fallback_item = final_goal_list[0]
         plan = [{"goal": {fallback_item: 1}, "type": "mine", "text": f"{fallback_item}"}]
 
-    return plan
+    return plan, response.usage
 
 
 def get_task_and_text_llm(user_input: str):
@@ -745,7 +745,7 @@ SKILL_EFFECT_ITEMS = {
 
 def solve_pddl(domain_file: str, problem_file: str) -> List[str]:
     JAVA17_PATH = "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
-    ENHSP_JAR = "/home/liangjunyi/NUS/JARVIS-1/lby/json_for_pddl/enhsp.jar"
+    ENHSP_JAR = "lby/json_for_pddl/enhsp.jar"
     try:
         result = subprocess.run(
             [

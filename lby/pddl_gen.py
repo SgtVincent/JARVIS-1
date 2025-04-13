@@ -7,8 +7,8 @@ from unified_planning.io import PDDLWriter
 import subprocess
 import os
 
-PDDL_DATA_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl"
-PDDL_RESULT_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl/generated_pddl"
+PDDL_DATA_PATH = "lby/json_for_pddl"
+PDDL_RESULT_PATH = "lby/json_for_pddl/generated_pddl"
 
 # === 配置和加载 ===
 with open(os.path.join(PDDL_DATA_PATH,"cared_recipies.json")) as f:

@@ -17,7 +17,7 @@ from functools import partial
 from rich import print as rprint
 import yaml
 
-ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
+ENV_CONFIG_DIR = "lby/global_configs/envs"
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
+    output_file = f"lby/eval_{args.llm_type}.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     with open(output_file,'a') as f_out:
         if not file_exists:

@@ -180,7 +180,7 @@ if __name__ == '__main__':
     # task_res, msg = evaluate_single_task(args, task_name)
 
     # eval for list of task
-    output_file = "/home/marmot/Boyang/JARVIS-1/lby/eval.txt"
+    output_file = "lby/eval.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     with open(output_file,'a') as f_out:
         if not file_exists:
