@@ -4,7 +4,7 @@ from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
 
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP
 
 
 import random
@@ -218,7 +218,17 @@ if __name__ == '__main__':
     # eval for list of task
     output_file = f"lby/eval_{args.llm_type}_pddl_act.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
-    generate_domain_pddl_all_skills('action pddl')
+    model_client = RealLLMClient()
+    skill_preconds, skill_custom_rules, skill_effect_items = get_skill_definitions(
+        TASK_SKILLS_MAP, model_client
+    )
+    folder_name = "action pddl"
+    domain_file = generate_domain_pddl_all_skills(
+        folder_name,
+        skill_preconds,
+        skill_custom_rules,
+        skill_effect_items
+    )
     with open(output_file, 'a') as f_out:
         if not file_exists:
             f_out.write(f"task name\tbiome\tseed\tresult\tresult_msg\n")
