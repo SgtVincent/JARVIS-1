@@ -195,7 +195,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["iron_pickaxe"],
+        default=["wooden_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
