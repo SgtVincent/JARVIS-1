@@ -1,10 +1,10 @@
 from jarvis.assembly.marks import MarkI
 from jarvis.stark_tech.env_interface import MinecraftWrapper
 from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
-
+from jarvis.assembly.base import skills
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP,solve_plan_with_fallback,map_action_name
 
 
 import random
@@ -33,13 +33,19 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
         print(goal_target)
         print(agent.record_infos[-1])
         print("--------------------Just before Get skill--------------------")
-
-        gen_problem_pddl(goal_target,agent.record_infos[-1])
-        # p_pddl = read_problem_pddl('action pddl/problem.pddl')
-        # d_pddl = read_domain_pddl('action pddl/domain.pddl')
-        actioon_plan =  solve_pddl('action pddl/domain.pddl','action pddl/problem.pddl')
-        skill = parse_plan_actions(actioon_plan,goal_target)
-        # skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
+        if goal_target not in skills.keys():
+            skill = {
+                "text": f"get {goal_target}",
+                "type": "mine",
+                "object_item": None
+            }
+        else:
+            gen_problem_pddl(goal_target,agent.record_infos[-1])
+            # actioon_plan =  solve_pddl('action pddl/domain.pddl','action pddl/problem.pddl')
+            # skill = parse_plan_actions(actioon_plan,goal_target)
+            skill = solve_plan_with_fallback(goal_target)
+            skill["text"] = map_action_name(skill["text"])
+            # skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
         print("skill",skill)
         if "timeout" in goal.keys():
             timeout = goal["timeout"]
@@ -86,6 +92,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
     task_obj = task_dict['task_obj']
     plan = task_dict['plan']
+    plan = plan[0]
     mark.current_plan = plan
 
     rprint(r"[bold blue][INFO]: Current task: [/bold blue]", task_dict['task'])
