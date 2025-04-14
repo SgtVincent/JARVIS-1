@@ -104,7 +104,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        max_subgoal_attempts = 10
+        max_subgoal_attempts = 20
         attempt_count = 0
 
         while not goal_obj_ret and attempt_count < max_subgoal_attempts:
