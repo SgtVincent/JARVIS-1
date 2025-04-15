@@ -104,7 +104,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        max_subgoal_attempts = 10
+        max_subgoal_attempts = 20
         attempt_count = 0
 
         while not goal_obj_ret and attempt_count < max_subgoal_attempts:
@@ -224,7 +224,7 @@ if __name__ == '__main__':
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     with open(output_file, 'a') as f_out:
         if not file_exists:
-             f_out.write(
+            f_out.write(
                 "task name\tenv_index\tbiome\tseed\tresult\tresult_msg\t"
                 "plan_prompt\tplan_completion\tplan_total\t"
                 "skill_prompt\tskill_completion\tskill_total\n"

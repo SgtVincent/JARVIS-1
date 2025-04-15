@@ -18,7 +18,17 @@ from functools import partial
 from rich import print as rprint
 import yaml
 
-ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
+from collections import defaultdict
+
+def summarize_token_usage_detailed(token_records):
+    usage_summary = defaultdict(lambda: {"prompt": 0, "completion": 0, "total": 0})
+    for call_type, usage in token_records:
+        usage_summary[call_type]["prompt"] += usage.prompt_tokens
+        usage_summary[call_type]["completion"] += usage.completion_tokens
+        usage_summary[call_type]["total"] += usage.total_tokens
+    return usage_summary
+
+ENV_CONFIG_DIR = "lby/global_configs/envs"
 
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
@@ -27,6 +37,7 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
 
     goal_target = list(goal["goal"].keys())[0]
     goal_target_num = list(goal["goal"].values())[0]
+    TOKEN_RECORD = []
 
     if goal_type == 'mine':
         print("--------------------Before Get skill--------------------")
@@ -64,7 +75,7 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
         ret_flag, ret_info = agent.do(goal_type, target=goal_target, target_num=goal_target_num)
     else:
         raise NotImplementedError
-    return ret_flag, ret_info
+    return ret_flag, ret_info, TOKEN_RECORD
 
 
 def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
@@ -76,16 +87,19 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     mark.record_infos = mark.post_infos([env.step(env.noop_action())[-1]])
     print('mark.record_infos', mark.record_infos)
 
-    json_path = "/home/liangjunyi/NUS/JARVIS-1/jarvis/assets/cared_recipies.json"
+    json_path = "jarvis/assets/cared_recipies.json"
     with open(json_path, "r") as f:
         recipes_data = json.load(f)
 
     rprint(f"[{datetime.now()}] Generating plan for task <{task_dict['task']}> via LLM!")
 
+    TOKEN_RECORD =[]
+
     seq_task = detect_item_dependencies(task_dict['task_obj'])
     if not check_items(seq_task):
         return False, "invalid item generated"
     plan = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
+    TOKEN_RECORD.append(("plan", token_usage))
 
     task_dict['plan'] = plan
     mark.current_task = task_dict
@@ -108,12 +122,13 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        max_subgoal_attempts = 10
+        max_subgoal_attempts = 20
         attempt_count = 0
 
         while not goal_obj_ret and attempt_count < max_subgoal_attempts:
-            ret_flag, ret_info = execute(mark, subgoal, llm_model)
+            ret_flag, ret_info, token_info = execute(mark, subgoal, llm_model)
             rprint(f"[{datetime.now()}] Executation Flag: {ret_flag} Information: {ret_info}")
+            TOKEN_RECORD.extend(token_info)
 
             attempt_count += 1
             goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
@@ -132,18 +147,18 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         if goal_obj_ret:
             goal_seq += 1
         else:
-            return False, "subgoal_failed"
+            return False, "subgoal_failed", TOKEN_RECORD
 
         task_done, done_info = monitor_function(obj=task_obj, info=mark.record_infos[-1])
         if task_done:
             rprint(r"[bold green][INFO]: Finish the task[/bold green]", task_dict['task'])
-            return True, "success"
+            return True, "success", TOKEN_RECORD
         if len(mark.record_infos) > env.maximum_step:
             # print(f"reach maximum steps for task ")
             rprint("[bold red][INFO]: Reach maximum steps for task[/bold red]", task_dict['task'])
-            return False, "timeout"
+            return False, "timeout", TOKEN_RECORD
 
-    return False, "plan_error"
+    return False, "plan_error", TOKEN_RECORD
 
 
 # for single task evaluate
@@ -186,8 +201,8 @@ def evaluate_single_task(args, task_name, yaml_file):
     mark.reset()
 
     mark.env_yaml = task_env_yaml
-    task_res, msg = evaluate_task(env, mark, task_config_dict, args.llm_type)
-    return task_res, msg, task_config_dict['env']['biome'], task_env_yaml['seed']
+    task_res, msg, token_records = evaluate_task(env, mark, task_config_dict, args.llm_type)
+    return task_res, msg, task_config_dict['env']['biome'], task_env_yaml['seed'], token_records 
 
 
 if __name__ == '__main__':
@@ -202,7 +217,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["wooden_pickaxe"],
+        default=["crafting_table", "wooden_pickaxe","stone_pickaxe", "iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -223,10 +238,10 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
+    output_file = f"lby/eval_{args.llm_type}_pddlact.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
-    model_client = RealLLMClient()
-    skill_preconds, skill_custom_rules, skill_effect_items = get_skill_definitions(
+    model_client = RealLLMClient(args.llm_type)
+    skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
         TASK_SKILLS_MAP, model_client
     )
     folder_name = "action pddl"
@@ -238,12 +253,25 @@ if __name__ == '__main__':
     )
     with open(output_file, 'a') as f_out:
         if not file_exists:
-            f_out.write(f"task name\tbiome\tseed\tresult\tresult_msg\n")
+            f_out.write(
+                "task name\tenv_index\tbiome\tseed\tresult\tresult_msg\t"
+                "plan_prompt\tplan_completion\tplan_total\t"
+                "skill_prompt\tskill_completion\tskill_total\n"
+            )
 
         for task_name in args.tasks_list:
             eval_yamls = [x for x in task_yamls if task_name in x]
             for task_yaml_file in eval_yamls:
-                task_res, msg, biome, seed = evaluate_single_task(args, task_name, task_yaml_file)
-                f_out.write(f"{task_name}\t{biome}\t{seed}\t{task_res}\t{msg}\n")
+                task_index = os.path.splitext(task_yaml_file)[0].split("_")[-1]
+                task_res, msg, biome, seed, token_records = evaluate_single_task(args, task_name, task_yaml_file)
+                token_records.append(("skill",token_usage))
+                usage_summary = summarize_token_usage_detailed(token_records)
+                plan = usage_summary.get("plan", {"prompt": 0, "completion": 0, "total": 0})
+                skill = usage_summary.get("skill", {"prompt": 0, "completion": 0, "total": 0})
+                f_out.write(
+                    f"{task_name}\t{task_index}\t{biome}\t{seed}\t{task_res}\t{msg}\t"
+                    f"{plan['prompt']}\t{plan['completion']}\t{plan['total']}\t"
+                    f"{skill['prompt']}\t{skill['completion']}\t{skill['total']}\n"
+                )
                 f_out.flush()  # Ensure data is written to file immediately
                 os.remove(os.path.join(ENV_CONFIG_DIR, task_yaml_file))

@@ -88,7 +88,7 @@ SKILL_EFFECT_ITEMS = {
 
 def solve_pddl(domain_file: str, problem_file: str) -> List[str]:
     JAVA17_PATH = "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
-    ENHSP_JAR = "/home/liangjunyi/NUS/JARVIS-1/lby/json_for_pddl/enhsp.jar"
+    ENHSP_JAR = "lby/json_for_pddl/enhsp.jar"
     try:
         result = subprocess.run(
             [
