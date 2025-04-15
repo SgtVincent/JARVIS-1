@@ -98,7 +98,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     seq_task = detect_item_dependencies(task_dict['task_obj'])
     if not check_items(seq_task):
         return False, "invalid item generated"
-    plan = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
+    plan, token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
     TOKEN_RECORD.append(("plan", token_usage))
 
     task_dict['plan'] = plan
@@ -106,7 +106,6 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
     task_obj = task_dict['task_obj']
     plan = task_dict['plan']
-    plan = plan[0]
     mark.current_plan = plan
 
     rprint(r"[bold blue][INFO]: Current task: [/bold blue]", task_dict['task'])
@@ -217,7 +216,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["crafting_table", "wooden_pickaxe","stone_pickaxe", "iron_pickaxe"],
+        default=["crafting_table", "wooden_pickaxe", "stone_pickaxe", "iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -264,7 +263,7 @@ if __name__ == '__main__':
             for task_yaml_file in eval_yamls:
                 task_index = os.path.splitext(task_yaml_file)[0].split("_")[-1]
                 task_res, msg, biome, seed, token_records = evaluate_single_task(args, task_name, task_yaml_file)
-                token_records.append(("skill",token_usage))
+                token_records.append(("skill", token_usage))
                 usage_summary = summarize_token_usage_detailed(token_records)
                 plan = usage_summary.get("plan", {"prompt": 0, "completion": 0, "total": 0})
                 skill = usage_summary.get("skill", {"prompt": 0, "completion": 0, "total": 0})
