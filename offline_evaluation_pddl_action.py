@@ -1,10 +1,10 @@
 from jarvis.assembly.marks import MarkI
 from jarvis.stark_tech.env_interface import MinecraftWrapper
 from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
-
+from jarvis.assembly.base import skills
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP,solve_plan_with_fallback,map_action_name
 
 
 import random
@@ -18,7 +18,7 @@ from functools import partial
 from rich import print as rprint
 import yaml
 
-ENV_CONFIG_DIR = "lby/global_configs/envs"
+ENV_CONFIG_DIR = "/home/liangjunyi/NUS/JARVIS-1/lby/global_configs/envs"
 
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
@@ -33,13 +33,19 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
         print(goal_target)
         print(agent.record_infos[-1])
         print("--------------------Just before Get skill--------------------")
-
-        gen_problem_pddl(goal_target,agent.record_infos[-1])
-        # p_pddl = read_problem_pddl('action pddl/problem.pddl')
-        # d_pddl = read_domain_pddl('action pddl/domain.pddl')
-        actioon_plan =  solve_pddl('action pddl/domain.pddl','action pddl/problem.pddl')
-        skill = parse_plan_actions(actioon_plan,goal_target)
-        # skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
+        if goal_target not in skills.keys():
+            skill = {
+                "text": f"get {goal_target}",
+                "type": "mine",
+                "object_item": None
+            }
+        else:
+            gen_problem_pddl(goal_target,agent.record_infos[-1])
+            # actioon_plan =  solve_pddl('action pddl/domain.pddl','action pddl/problem.pddl')
+            # skill = parse_plan_actions(actioon_plan,goal_target)
+            skill = solve_plan_with_fallback(goal_target)
+            skill["text"] = map_action_name(skill["text"])
+            # skill = get_skill(goal_target, agent.record_infos[-1], llm_model)
         print("skill",skill)
         if "timeout" in goal.keys():
             timeout = goal["timeout"]
@@ -70,7 +76,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     mark.record_infos = mark.post_infos([env.step(env.noop_action())[-1]])
     print('mark.record_infos', mark.record_infos)
 
-    json_path = "jarvis/assets/cared_recipies.json"
+    json_path = "/home/liangjunyi/NUS/JARVIS-1/jarvis/assets/cared_recipies.json"
     with open(json_path, "r") as f:
         recipes_data = json.load(f)
 
@@ -86,6 +92,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
     task_obj = task_dict['task_obj']
     plan = task_dict['plan']
+    plan = plan[0]
     mark.current_plan = plan
 
     rprint(r"[bold blue][INFO]: Current task: [/bold blue]", task_dict['task'])
@@ -195,7 +202,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["crafting_table", "wooden_pickaxe","stone_pickaxe","iron_pickaxe"],
+        default=["wooden_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -216,7 +223,7 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"lby/eval_{args.llm_type}_pddl_act.txt"
+    output_file = f"/home/liangjunyi/NUS/JARVIS-1/lby/eval_{args.llm_type}.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     model_client = RealLLMClient()
     skill_preconds, skill_custom_rules, skill_effect_items = get_skill_definitions(

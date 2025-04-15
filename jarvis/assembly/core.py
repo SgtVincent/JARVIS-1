@@ -545,7 +545,7 @@ def check_items(item_list):
 
 
 
-def get_plan(final_goal_list, info, recipes_data, llm_model="gpt-3.5-turbo", max_retries=2):
+def get_plan(final_goal_list, info, recipes_data, llm_model="qwen-max", max_retries=2):
     if isinstance(final_goal_list, str):
         final_goal_list = [final_goal_list]
 
@@ -567,7 +567,7 @@ def get_plan(final_goal_list, info, recipes_data, llm_model="gpt-3.5-turbo", max
             "For crafting planks, you can use any type of logs (oak_log, spruce_log, birch_log, etc.) to get the same result.\n"
             "Please do not limit yourself to oak_log if other logs are available. Just use logs.\n"
             "Pay attention word should be exact like 'logs' is valid but 'log' not.\n"
-            "IMportant requirement : planks number always add additional 4, logs always add additional 4\n"
+            "Important requirement : planks number always add additional 4, logs always add additional 2\n"
         )
         if error_reason:
             base_query += f"\n[WARNING] Your last output was invalid: {error_reason}\n"
@@ -991,6 +991,42 @@ class RealLLMClient:
             max_tokens=1024
         )
         return response.choices[0].message.content
+
+
+def solve_plan_with_fallback(task: str) -> dict:
+    # 第一次尝试：/home/liangjunyi/NUS/JARVIS-1/action pddl/domain.pddl
+    actioon_plan = solve_pddl('action pddl/domain.pddl', 'action pddl/problem.pddl')
+
+    if not actioon_plan:
+        # 如果没有解，尝试第二个
+        print("try second")
+        actioon_plan = solve_pddl('/home/liangjunyi/NUS/JARVIS-1/jarvis/assembly/action pddl/domain.pddl',
+                                  'action pddl/problem.pddl')
+
+    # 如果依旧没有解，则直接返回默认
+    if not actioon_plan:
+        print("try default")
+        return {
+            "text": f"get {task}",
+            "type": "mine",
+            "object_item": None
+        }
+
+    # 如果有解，交给 parse_plan_actions 来进一步解析
+    return parse_plan_actions(actioon_plan, task)
+
+def map_action_name(action_name: str) -> str:
+    name_map = {
+        "break_iron_blocks": "break iron blocks",
+        "break_iron_ore_blocks": "break iron_ore blocks",
+        "break_the_stone_blocks_and_mine_iron_ore": "break the stone blocks and mine iron ore",
+        "chop_down_the_tree": "chop down the tree",
+        "dig_down": "dig down",
+        "equip_iron_axe_to_chop_down_the_tree": "equip iron axe to chop down the tree",
+        "equip_stone_pickaxe": "equip stone pickaxe",
+        "equip_wooden_pickaxe": "equip wooden pickaxe"
+    }
+    return name_map.get(action_name, action_name)
 
 class JARVIS:
     def __init__(self, model = 'gpt-3.5-turbo'):

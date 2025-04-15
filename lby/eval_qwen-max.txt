@@ -228,3 +228,32 @@ iron_pickaxe	forest	2168077837307162937	True	success
 iron_pickaxe	plains	937537004708417341	True	success
 iron_pickaxe	forest	1224797337791535487	True	success
 iron_pickaxe	plains	7973381489532929144	False	timeout
+stone_pickaxe	plains	6263789223434352367	False	subgoal_failed
+stone_pickaxe	forest	937537004708417341	True	success
+stone_pickaxe	forest	3764708389372876529	True	success
+stone_pickaxe	plains	3795791292830484358	False	subgoal_failed
+stone_pickaxe	forest	4300735465498301378	True	success
+stone_pickaxe	plains	3377869139818106474	True	success
+stone_pickaxe	forest	12345	False	subgoal_failed
+stone_pickaxe	plains	1141999397725833968	False	subgoal_failed
+stone_pickaxe	plains	1856683262014543843	True	success
+stone_pickaxe	forest	1224028507381860312	False	subgoal_failed
+stone_pickaxe	plains	7000137842333311755	True	success
+stone_pickaxe	forest	2673161775284254959	True	success
+stone_pickaxe	forest	2742397790711826419	False	subgoal_failed
+stone_pickaxe	plains	5021602761754158700	True	success
+stone_pickaxe	plains	723890488575261301	True	success
+crafting_table	forest	2714987843146941703	False	invalid item generated
+crafting_table	forest	7000137842333311755	False	invalid item generated
+crafting_table	forest	2168077837307162937	False	invalid item generated
+crafting_table	plains	3623089998574470177	False	invalid item generated
+iron_pickaxe	plains	8496160286458255438	False	subgoal_failed
+iron_pickaxe	plains	5909279964792372398	False	subgoal_failed
+iron_pickaxe	forest	5909279964792372398	False	subgoal_failed
+iron_pickaxe	plains	3764708389372876529	False	subgoal_failed
+iron_pickaxe	plains	2168077837307162937	False	subgoal_failed
+iron_pickaxe	plains	1224797337791535487	False	subgoal_failed
+iron_pickaxe	forest	3377869139818106474	False	subgoal_failed
+iron_pickaxe	plains	2168077837307162937	False	subgoal_failed
+wooden_pickaxe	plains	7000137842333311755	False	subgoal_failed
+wooden_pickaxe	forest	6263789223434352367	True	success
