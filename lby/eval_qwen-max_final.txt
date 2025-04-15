@@ -1,0 +1,2 @@
+task name	env_index	biome	seed	result	result_msg	plan_prompt	plan_completion	plan_total	skill_prompt	skill_completion	skill_total
+crafting_table	62	forest	424469685340200986	True	success	330	74	404	519	48	567
