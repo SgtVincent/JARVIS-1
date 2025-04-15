@@ -224,7 +224,7 @@ if __name__ == '__main__':
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     with open(output_file, 'a') as f_out:
         if not file_exists:
-             f_out.write(
+            f_out.write(
                 "task name\tenv_index\tbiome\tseed\tresult\tresult_msg\t"
                 "plan_prompt\tplan_completion\tplan_total\t"
                 "skill_prompt\tskill_completion\tskill_total\n"

@@ -948,7 +948,8 @@ Return only that JSON.
             prompt_with_error += "Please output valid JSON with the keys SKILL_PRECONDS, SKILL_CUSTOM_RULES, SKILL_EFFECT_ITEMS, covering all skills. No extra text."
         else:
             prompt_with_error = base_prompt
-        raw_output = model_client.ask(prompt_with_error).strip()
+        raw_output, TOKEN_USAGE = model_client.ask(prompt_with_error)
+        raw_output = raw_output.strip()
         try:
             data = json.loads(raw_output)
         except json.JSONDecodeError:
@@ -977,12 +978,14 @@ Return only that JSON.
         skill_preconds = {sk: "" for sk in all_skills}
         skill_custom_rules = {sk: {"extra_pre": "", "extra_eff": ""} for sk in all_skills}
         skill_effect_items = {sk: "" for sk in all_skills}
-    return skill_preconds, skill_custom_rules, skill_effect_items
+    return skill_preconds, skill_custom_rules, skill_effect_items, TOKEN_USAGE
 
 class RealLLMClient:
+    def __init__(self, llm_type="qwen-max"):
+        self.llm_type = llm_type
     def ask(self, prompt_text: str) -> str:
         response = client.chat.completions.create(
-            model="qwen-max",
+            model=self.llm_type,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt_text}
@@ -990,17 +993,17 @@ class RealLLMClient:
             temperature=0.7,
             max_tokens=1024
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content, response.usage
 
 
 def solve_plan_with_fallback(task: str) -> dict:
-    # 第一次尝试：/home/liangjunyi/NUS/JARVIS-1/action pddl/domain.pddl
+    # 第一次尝试：action pddl/domain.pddl
     actioon_plan = solve_pddl('action pddl/domain.pddl', 'action pddl/problem.pddl')
 
     if not actioon_plan:
         # 如果没有解，尝试第二个
         print("try second")
-        actioon_plan = solve_pddl('/home/liangjunyi/NUS/JARVIS-1/jarvis/assembly/action pddl/domain.pddl',
+        actioon_plan = solve_pddl('jarvis/assembly/action pddl/domain.pddl',
                                   'action pddl/problem.pddl')
 
     # 如果依旧没有解，则直接返回默认
