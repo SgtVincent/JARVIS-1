@@ -240,16 +240,7 @@ if __name__ == '__main__':
     output_file = f"lby/eval_{args.llm_type}_pddlact.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     model_client = RealLLMClient(args.llm_type)
-    skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
-        TASK_SKILLS_MAP, model_client
-    )
-    folder_name = "action pddl"
-    domain_file = generate_domain_pddl_all_skills(
-        folder_name,
-        skill_preconds,
-        skill_custom_rules,
-        skill_effect_items
-    )
+   
     with open(output_file, 'a') as f_out:
         if not file_exists:
             f_out.write(
@@ -261,6 +252,17 @@ if __name__ == '__main__':
         for task_name in args.tasks_list:
             eval_yamls = [x for x in task_yamls if task_name in x]
             for task_yaml_file in eval_yamls:
+                skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
+                    TASK_SKILLS_MAP, model_client
+                )
+                folder_name = "action pddl"
+                domain_file = generate_domain_pddl_all_skills(
+                    folder_name,
+                    skill_preconds,
+                    skill_custom_rules,
+                    skill_effect_items
+                )
+
                 task_index = os.path.splitext(task_yaml_file)[0].split("_")[-1]
                 task_res, msg, biome, seed, token_records = evaluate_single_task(args, task_name, task_yaml_file)
                 token_records.append(("skill", token_usage))
