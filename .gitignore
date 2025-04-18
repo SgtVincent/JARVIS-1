@@ -171,5 +171,6 @@ data
 .idea
 
 lby/global_configs/envs/*.yaml
+lby/json_for_pddl/generated_pddl
 !lby/global_configs/envs/jarvis.yaml
 action pddl

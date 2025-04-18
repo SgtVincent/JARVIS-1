@@ -208,17 +208,20 @@ def parse_evaluation_text(text):
                 eval_txt, eval_type = line.split("Evaluation:")[1].strip().split(", ")
                 return eval_txt.strip(), eval_type.replace(".", "")
             except:
-                return "", "proceed"
-    return None, "proceed"
+                return "", "retry"
+    return None, "retry"
 
-def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
+def evaluate_plan(plan, addition_info="", llm_model="gpt-3.5-turbo"):
     query = f"""Task: {translate_task(plan[-1]['text'])}.\nCurrent plan: {translate_plan(plan)}."""
+    if len(addition_info):
+        query+=addition_info
+    print(query)
     response = client.chat.completions.create(
         model=llm_model,
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects in microcraft world, do not propose basic items or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. (6) Do not make up non-existent object. Output your thought and your evaluation result."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and agent's current plan for the task. You need to evaluate the plan and provide your insights. Here are some hints for you: (1) If the plan is reasonable enough, proceed it. (2) If you think adding additional plan can benefit the task, refine it. (3) Only focus on high level and specific objects in microcraft world, do not propose basic or abstract objects. (4) Do not propose objects that are already in the plan. (5) If refine, only add one object. (6) Do not make up non-existent object, describe the item in microcraft style. (7) Do not propose object even harder than current task. (8) You MUST have a pickaxe to collect minerals such as cobblestone, iron_ore. Output your thought and your evaluation result."
             },
             {
                 "role": "user",
@@ -230,7 +233,15 @@ def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "user",
-                "content": "Task: Obtain wooden_pickaxe\nCurrent plan: mine logs, craft planks, craft crafting_table, craft stick, craft wooden_pickaxe."
+                "content": "Task: Obtain stone_pickaxe.\nCurrent plan: mine logs, craft planks, mine cobblestone, craft crafting_table, craft stick, craft stone_pickaxe."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: I can not mine minerals like cobblestone without a pickaxe, I must craft a pickaxe ahead of mine cobblestone.\nEvaluation: wooden_pickaxe, refine."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain wooden_pickaxe.\nCurrent plan: mine logs, craft planks, craft crafting_table, craft stick, craft wooden_pickaxe."
             },
             {
                 "role": "assistant",
@@ -238,7 +249,7 @@ def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "user",
-                "content": "Task: Obtain wooden_pickaxe\nCurrent plan: mine logs, craft planks, craft stick, craft wooden_pickaxe."
+                "content": "Task: Obtain wooden_pickaxe.\nCurrent plan: mine logs, craft planks, craft stick, craft wooden_pickaxe."
             },
             {
                 "role": "assistant",
@@ -250,15 +261,31 @@ def evaluate_plan(plan, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "assistant",
-                "content": "Thought: Mine cobblestone is laborous with hand, crafting wooden_pickaxe ahead can make it eaiser.\nEvaluation: reasonable plan, proceed."
+                "content": "Thought: Mine cobblestone needs pickaxe, wooden_pickaxe is the easiest pickaxe to make.\nEvaluation: reasonable plan, proceed."
             },
             {
                 "role": "user",
-                "content": "Task: Obtain iron_pickaxe\nCurrent plan: mine logs, craft planks, craft crafting_table, craft stick, craft wooden_pickaxe, mine cobblestone, craft furnace, mine iron_ore, smelt iron_ingot, craft iron_pickaxe."
+                "content": "Task: Obtain iron_pickaxe.\nCurrent plan: mine logs, craft planks, mine cobblestone, craft crafting_table, craft stick, craft stone_pickaxe, craft furnace, mine iron_ore, smelt iron_ingot, craft iron_pickaxe."
             },
             {
                 "role": "assistant",
-                "content": "Thought: Mine iron_ore is laborous even with wooden_pickaxe, it's beneficial to craft stone_pickaxe ahead to facilicate mining.\nEvaluation: stone_pickaxe, refine."
+                "content": "Thought: The problem in current plan is that cobblestone is a mineral, which can not be collected directly, I need a wooden_pickaxe to collect cobblestone.\nEvaluation: wooden_pickaxe, refine."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain iron_pickaxe.\nCurrent plan: mine logs, craft planks, craft crafting_table, craft stick, craft wooden_pickaxe, mine cobblestone, craft furnace, mine iron_ore, smelt iron_ingot, craft iron_pickaxe."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Mine iron_ore is laborous even with wooden_pickaxe, it's beneficial to also craft a stone_pickaxe ahead to facilicate mining.\nEvaluation: stone_pickaxe, refine."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain stone_pickaxe.\nCurrent plan: mine logs, craft planks, mine cobblestone, craft crafting_table, craft stick, craft stone_pickaxe."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Minerals can only be collected with pickaxe, current plan does not have pickaxe before mine cobblestone.\nEvaluation: wooden_pickaxe, craft."
             },
             {
                 "role": "user",
@@ -300,7 +327,7 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip a tool when you already have it in your inventory, if you don't have any, just do the task directly. (2) NEVER craft things. (3) Decribe things with microcraft style. (4) Focus on current inventory information, do not make things up. Output reasoning thought and your final action with its type, the action types are only 'mine', 'equip'."
+                "content": "You are a helpful assistant in Minecraft. I will give you a task in Minecraft and the agent's current state information. And you need to decide what action to take. Here are some hints for you: (1) You can only equip a tool when you already have it in your inventory, if you don't have any, just do the task directly. (2) NEVER give craft related skill. (3) Decribe things in microcraft style. (4) Focus on current inventory information, do not make things up. (5) You DO NOT stop even if you already have the item in the inventory, we may need more of the item. Output reasoning thought and your final action with its type, the action types are only 'mine', 'equip'."
             },
             {
                 "role": "user",
@@ -320,11 +347,19 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
             },
             {
                 "role": "user",
-                "content": "Task: Obtain logs.\nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
+                "content": "Task: Obtain cobblestone.\nAgent State: Now I have 1 iron_axe in inventory. Now I equip the air in hand. Now I locate in height of 60."
             },
             {
                 "role": "assistant",
-                "content": "Thought: Equip the iron_axe will accelerate the speed to chop trees. I have an iron_axe in the inventory. So I should equip the iron_axe first.\nAction: equip iron_axe, equip."
+                "content": "Thought: Equip the iron_axe will accelerate the speed to mine stones. I have an iron_axe in the inventory. So I should equip the iron_axe first.\nAction: equip iron_axe, equip."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain logs.\nAgent State: Now my inventory has 1 birch_log. Now I equip the birch_log in mainhand. Now I locate in height of 53."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Though I have birch_log in inventory, the task is still obtain logs. This indicates current logs is not enough, so I should keep getting logs.\nAction: chop down trees and collect logs, mine."
             },
             {
                 "role": "user",
@@ -333,6 +368,30 @@ def get_skill_pddl(task, info, llm_model="gpt-3.5-turbo"):
             {
                 "role": "assistant",
                 "content": "Thought: Equip a tool will accelerate the speed to chop trees. I have an iron_axe and a stone axe in the inventory. iron_pickaxe is a better tool, so I should equip the iron_axe first.\nAction: equip iron_axe, equip."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain cobblestone.\nAgent State: Now my inventory has 1 iron_axe, 1 wooden_pickaxe. Now I equip the iron_axe in mainhand. Now I locate in height of 65."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Minerals like cobblestone can only be obtained using pickaxe. Therefore I need to equip right tool before collecting cobblestone\nAction: equip wooden_pickaxe, equip."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain cobblestone.\nAgent State: Now my inventory has 1 wooden_pickaxe, 8 oak_planks, 3 dirt. Now I equip the wooden_axe in mainhand. Now I locate in height of 55."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: Cobblestone is common material under earth. Given that I have no cobblestone in inventory, keep digging down should lead me to it.\nAction: dig down, mine."
+            },
+            {
+                "role": "user",
+                "content": "Task: Obtain iron_ore.\nAgent State: Now my inventory has 1 iron_axe, 1 wooden_pickaxe, 1 oak_log, 8 oak_planks, 3 cobblestone, 4 dirt. Now I equip the iron_axe in mainhand. Now I locate in height of 52."
+            },
+            {
+                "role": "assistant",
+                "content": "Thought: iron_ore is commonly found in large quantities under the ground. But I am using the wrong tools, I need to switch the tool and then mine deeper.\nAction: equip wooden_pickaxe and break stone to obtain iron_ore, mine."
             },
             {
                 "role": "user",

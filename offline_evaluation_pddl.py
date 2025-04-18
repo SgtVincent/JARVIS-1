@@ -3,7 +3,7 @@ from jarvis.stark_tech.env_interface import MinecraftWrapper
 from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
 
 from jarvis.assembly.evaluate import monitor_function
-from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
+from jarvis.assembly.base import get_task_config, memory
 from jarvis.assembly.core import get_skill, get_skill_pddl, evaluate_plan
 
 import random
@@ -13,10 +13,10 @@ import argparse
 
 from datetime import datetime
 from functools import partial
-
+from copy import deepcopy
 from rich import print as rprint
 import yaml
-from lby.pddl_gen import extract_primitive_steps, write_domain_and_problem
+from lby.pddl_gen import extract_primitive_steps, write_domain_and_problem, USED_RECIPE
 from collections import defaultdict
 
 ENV_CONFIG_DIR = "lby/global_configs/envs"
@@ -31,13 +31,12 @@ def get_pddl_plan(obj_name):
     pddl_task_name = f"minecraft:{obj_name}"
 
     pddl_sequences = write_domain_and_problem(pddl_task_name, extract_primitive_steps(pddl_task_name))
-    plan = pddl_sequences.split('\n')
-    plan = [step_pddl_to_txt(p) for p in plan]
-    plan_dict= defaultdict(int)
+    plan = [step_pddl_to_txt(p) for p in pddl_sequences]
+    count_dict= defaultdict(int)
     for x in plan:
-        plan_dict[x] += 1
+        count_dict[x] += 1
     plan.clear()
-    for subgoal, num in plan_dict.items():
+    for subgoal, num in count_dict.items():
         action, item = subgoal.split("__")
         if action == "collect":
             action = 'mine'
@@ -52,17 +51,42 @@ def get_pddl_plan(obj_name):
     return plan
 
 def update_plan(plan_origin, plan_add):
-    idx = 0
     while len(plan_add):
         new_p = plan_add.pop(0)
-        if plan_origin[idx]['text'] == new_p['text']:
-            if plan_origin[idx]['text'] not in ['crafting_table', 'furnace']:
-                plan_origin[idx]['goal'][plan_origin[idx]['text']] += new_p['goal'][new_p['text']]
-        else:
-            plan_origin.insert(idx, new_p)  
-        idx+=1
-        idx = max(idx, len(plan_origin)-1)
+
+        for p in plan_origin:
+            if p['text'] == new_p['text']:
+                if p['text'] not in ['crafting_table', 'furnace']:
+                    p['goal'][p['text']] += new_p['goal'][new_p['text']]
+                break
+        
+        if p == plan_origin[-1] and p['text'] != new_p['text']:
+            plan_origin.append(new_p)
+    
     return plan_origin
+
+def keep_new_plan(new_plan, plan_buff):
+    new_task = new_plan[-1]['text']
+    for plan in plan_buff:
+        for item in plan:
+            if item['text'] == new_task:
+                return False
+    
+    return True
+
+
+def merge_all_plan(plan_buff):
+    if len(plan_buff) == 1:
+        return plan_buff[0]
+    while len(plan_buff) > 1:
+        plan_buff = sorted(plan_buff, key=len)
+        plan_short = plan_buff.pop(0)
+        plan_long = plan_buff.pop(0)
+        t_merge = update_plan(plan_short, plan_long)
+        plan_buff.append(t_merge)
+    
+    return plan_buff[0]
+
 
 def execute(agent, goal, llm_model="gpt-3.5-turbo"):
     goal_type = goal["type"]
@@ -82,7 +106,7 @@ def execute(agent, goal, llm_model="gpt-3.5-turbo"):
         rprint(f"[{datetime.now()}] Current skill prompt: {text_prompt}")
         agent.record_prompts[len(agent.record_infos)] = text_prompt
         if skill['type'] == 'mine':
-            ret_flag, ret_info = agent.do(text_prompt, reward = float('inf'), monitor_fn = partial(monitor_function, goal["goal"]), timeout=timeout)
+            ret_flag, ret_info = agent.do(text_prompt, reward = float('inf'), monitor_fn = partial(monitor_function, goal["goal"]), target_num = goal_target_num, timeout=timeout)
         else:
             try:
                 ret_flag, ret_info = agent.do(skill['type'], target_item=skill['object_item'])
@@ -114,12 +138,34 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         obj_name = list(task_obj.keys())[0]
         plan = get_pddl_plan(obj_name)
         
-    insights, eval_type = evaluate_plan(plan, llm_model)
-    if eval_type == "refine":
-        # update_plan(get_pddl_plan("iron_pickaxe"), get_pddl_plan("wooden_pickaxe"))
-        add_plan = get_pddl_plan(insights)
-        plan = update_plan(plan, add_plan)
+    addition_info = ""
+    plan_buff = [plan]
+    while True:
+        insights, eval_type = evaluate_plan(merge_all_plan(deepcopy(plan_buff)), addition_info, llm_model)
+        addition_info = ""
+        if eval_type == "proceed":
+            break
+        elif eval_type in ["refine", "craft"]:
+            insights = insights.lower()
+            insights = insights.split(" ")[-1]
+            try:
+                if f"minecraft:{insights}" not in USED_RECIPE.keys():
+                    addition_info = f"\nYour former propose: '{insights}, {eval_type}' there is not a item can or need to be crafted."
+                    continue
 
+                add_plan = get_pddl_plan(insights)
+                if len(add_plan) > len(plan):
+                    addition_info = f"\nYour refine propose: '{insights}, {eval_type}' is not realistic, you are making task harder."
+                else:
+                    if keep_new_plan(add_plan, plan_buff):
+                        plan_buff.append(add_plan)
+                    else:
+                        addition_info = f"\nYour refine propose: '{insights}, {eval_type}' is redundant, original plan has already covered it."
+
+            except Exception:
+                addition_info = f"\nYour former propose: '{insights}, {eval_type}' is not valid."
+
+    plan = merge_all_plan(plan_buff)
     mark.current_plan = plan
 
     rprint(r"[bold blue][INFO]: Current task: [/bold blue]", task_dict['task'])
@@ -142,6 +188,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
             task_done, done_info = monitor_function(obj=task_obj, info = mark.record_infos[-1])
             if task_done or len(mark.record_infos) >  env.maximum_step:
                 break
+        
         if goal_obj_ret:
             plan.pop(0)
         

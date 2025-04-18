@@ -7,8 +7,8 @@ from unified_planning.io import PDDLWriter
 import subprocess
 import os
 
-PDDL_DATA_PATH = "lby/json_for_pddl"
-PDDL_RESULT_PATH = "lby/json_for_pddl/generated_pddl"
+PDDL_DATA_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl"
+PDDL_RESULT_PATH = "/home/marmot/Boyang/JARVIS-1/lby/json_for_pddl/generated_pddl"
 
 # === 配置和加载 ===
 with open(os.path.join(PDDL_DATA_PATH,"cared_recipies.json")) as f:
@@ -75,6 +75,25 @@ def extract_primitive_steps(target, recipes=USED_RECIPE):
                 queue.append("minecraft:crafting_table")
 
     return visited
+
+
+def expand_plan_by_yield(plan_lines):
+    expanded = []
+    current_time = 0.0
+    for line in plan_lines:
+        if not line or "(" not in line:
+            continue
+        action_raw = line.split(":")[-1].strip().strip("()")
+        parts = action_raw.split("__")
+        if len(parts) != 2:
+            continue
+        action, target = parts
+        full_name = f"minecraft:{target}"
+        count = get_result_count(USED_RECIPE.get(full_name, {})) if action in ("make", "smelt") else 1
+        for _ in range(count):
+            expanded.append(f"{current_time:.1f}: ({action}__{target})")
+            current_time += 1.0
+    return expanded
 
 # === domain.pddl 和 problem.pddl 生成 ===
 def write_domain_and_problem(target, steps=0):
@@ -174,8 +193,10 @@ def write_domain_and_problem(target, steps=0):
                 plan_started = True
                 plan_lines.append(line.strip())
         print("Generate Plan:")
-        for line in plan_lines:
+        for line in expand_plan_by_yield(plan_lines):
             print(line)
+        
+        return expand_plan_by_yield(plan_lines)
     except Exception as e:
         print(" ENHSP failed:", e)
 
