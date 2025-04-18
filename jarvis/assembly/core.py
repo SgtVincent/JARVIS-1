@@ -567,7 +567,7 @@ def get_plan(final_goal_list, info, recipes_data, llm_model="qwen-max", max_retr
             "For crafting planks, you can use any type of logs (oak_log, spruce_log, birch_log, etc.) to get the same result.\n"
             "Please do not limit yourself to oak_log if other logs are available. Just use logs.\n"
             "Pay attention word should be exact like 'logs' is valid but 'log' not.\n"
-            "Important requirement : planks number always add additional 4, logs always add additional 2，sticks always additional 2\n"
+            "Important requirement : planks number always add additional 4, logs always add additional 2, stick number always add additional 2 if needed.\n"
         )
         if error_reason:
             base_query += f"\n[WARNING] Your last output was invalid: {error_reason}\n"

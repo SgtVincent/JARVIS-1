@@ -1,3 +1,8 @@
 export TMPDIR="/media/marmot/One Touch/Boyang"
 export OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
 export OPENAI_API_KEY="sk-4bd18871dc144aed9aa6db6ec647520e"
+// export OPENAI_API_KEY="sk-d46b6105bde64f52914616f720a2a134"
+export TMPDIR="/media/marmot/One Touch/Boyang"
+export OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+export OPENAI_API_KEY="sk-2f54e92453ae49309e0edd197b302722"
+python offline_evaluation_pddl_action.py --llm_type qwen-max --use_gui 0

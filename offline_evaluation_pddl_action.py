@@ -98,7 +98,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     seq_task = detect_item_dependencies(task_dict['task_obj'])
     if not check_items(seq_task):
         return False, "invalid item generated"
-    plan,token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
+    plan, token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data)
     TOKEN_RECORD.append(("plan", token_usage))
 
     task_dict['plan'] = plan
@@ -122,7 +122,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        max_subgoal_attempts = 10
+        max_subgoal_attempts = 20
         attempt_count = 0
 
         while not goal_obj_ret and attempt_count < max_subgoal_attempts:
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["iron_pickaxe"],
+        default=["crafting_table", "wooden_pickaxe", "stone_pickaxe", "iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -241,16 +241,7 @@ if __name__ == '__main__':
     output_file = f"lby/eval_{args.llm_type}_pddlact.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     model_client = RealLLMClient(args.llm_type)
-    skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
-        TASK_SKILLS_MAP, model_client
-    )
-    folder_name = "action pddl"
-    domain_file = generate_domain_pddl_all_skills(
-        folder_name,
-        skill_preconds,
-        skill_custom_rules,
-        skill_effect_items
-    )
+
     with open(output_file, 'a') as f_out:
         if not file_exists:
             f_out.write(
@@ -262,9 +253,20 @@ if __name__ == '__main__':
         for task_name in args.tasks_list:
             eval_yamls = [x for x in task_yamls if task_name in x]
             for task_yaml_file in eval_yamls:
+                skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
+                    TASK_SKILLS_MAP, model_client
+                )
+                folder_name = "action pddl"
+                domain_file = generate_domain_pddl_all_skills(
+                    folder_name,
+                    skill_preconds,
+                    skill_custom_rules,
+                    skill_effect_items
+                )
+
                 task_index = os.path.splitext(task_yaml_file)[0].split("_")[-1]
                 task_res, msg, biome, seed, token_records = evaluate_single_task(args, task_name, task_yaml_file)
-                token_records.append(("skill",token_usage))
+                token_records.append(("skill", token_usage))
                 usage_summary = summarize_token_usage_detailed(token_records)
                 plan = usage_summary.get("plan", {"prompt": 0, "completion": 0, "total": 0})
                 skill = usage_summary.get("skill", {"prompt": 0, "completion": 0, "total": 0})
