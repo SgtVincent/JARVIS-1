@@ -4,7 +4,7 @@ from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
 
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,get_plan_pddl_quantity
 
 import random
 import json
@@ -78,11 +78,13 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
     TOKEN_RECORD =[]
 
-    seq_task = detect_item_dependencies(task_dict['task_obj'])
-    if not check_items(seq_task):
-        return False, "invalid item generated", TOKEN_RECORD
-    plan, token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data, llm_model=llm_model)
-    TOKEN_RECORD.append(("plan", token_usage))
+    # seq_task = detect_item_dependencies(task_dict['task_obj'])
+    # if not check_items(seq_task):
+    #     return False, "invalid item generated", TOKEN_RECORD
+    # plan, token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data, llm_model=llm_model)
+    print("++++++",list(task_dict['task_obj'].keys())[0])
+    plan, token_usage = get_plan_pddl_quantity(list(task_dict['task_obj'].keys())[0], llm_type = "qwen-max", max_eval = 3)
+    TOKEN_RECORD.extend(("plan", token_usage))
 
     task_dict['plan'] = plan
     mark.current_task = task_dict

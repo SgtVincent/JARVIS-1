@@ -8,7 +8,6 @@ def step_pddl_to_txt(pddl_txt):
     end   = pddl_txt.index(')')
     return pddl_txt[start+1: end]
 
-
 def get_pddl_plan(obj_name):
     plan = []
     pddl_task_name = f"minecraft:{obj_name}"
@@ -54,7 +53,6 @@ def keep_new_plan(new_plan, plan_buff):
         for item in plan:
             if item['text'] == new_task:
                 return False
-    
     return True
 
 def merge_all_plan(plan_buff):
