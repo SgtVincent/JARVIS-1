@@ -1,0 +1,26 @@
+(define (problem minecraft-problem)
+ (:domain minecraft-domain)
+ (:objects
+    minecraft_andesite minecraft_coal minecraft_cobblestone minecraft_crafting_table minecraft_diorite minecraft_dirt minecraft_granite minecraft_iron_axe minecraft_iron_ore minecraft_oak_log minecraft_oak_planks minecraft_stick minecraft_stone_pickaxe - item
+ )
+ (:init
+    (= (count minecraft_oak_log) 3)
+    (= (count minecraft_oak_planks) 1)
+    (= (count minecraft_stick) 4)
+    (= (count minecraft_iron_axe) 1)
+    (= (count minecraft_dirt) 8)
+    (= (count minecraft_stone_pickaxe) 1)
+    (= (count minecraft_andesite) 4)
+    (= (count minecraft_granite) 2)
+    (= (count minecraft_cobblestone) 36)
+    (= (count minecraft_crafting_table) 1)
+    (= (count minecraft_diorite) 1)
+    (= (count minecraft_coal) 4)
+    (= (count minecraft_iron_ore) 0)
+    (= (agent_height) 66)
+    (equipped minecraft_stone_pickaxe)
+ )
+ (:goal (and
+    (<= 1 (count minecraft_iron_ore))
+ ))
+)
