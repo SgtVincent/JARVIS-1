@@ -66,7 +66,7 @@ def gen_problem_pddl(task,info):
 def parse_plan_actions(plan: List[str], task: str):
     if not plan:
         return {
-            "text": f"get {task}",
+            "text": f"dig_down",
             "type": "mine",
             "object_item": None
         }
@@ -82,7 +82,7 @@ def parse_plan_actions(plan: List[str], task: str):
             actions.append(action)
     if not actions:
         return {
-            "text": f"get {task}",
+            "text": f"dig_down",
             "type": "mine",
             "object_item": None
         }
@@ -567,7 +567,7 @@ def get_plan(final_goal_list, info, recipes_data, llm_model="qwen-max", max_retr
             "For crafting planks, you can use any type of logs (oak_log, spruce_log, birch_log, etc.) to get the same result.\n"
             "Please do not limit yourself to oak_log if other logs are available. Just use logs.\n"
             "Pay attention word should be exact like 'logs' is valid but 'log' not.\n"
-            "Important requirement : planks number always add additional 4, logs always add additional 2\n"
+            "Important requirement : planks number always add additional 4, logs always add additional 2，sticks always additional 2\n"
         )
         if error_reason:
             base_query += f"\n[WARNING] Your last output was invalid: {error_reason}\n"
@@ -998,7 +998,7 @@ class RealLLMClient:
 
 def solve_plan_with_fallback(task: str) -> dict:
     # 第一次尝试：action pddl/domain.pddl
-    actioon_plan = solve_pddl('action pddl/domain.pddl', 'action pddl/problem.pddl')
+    actioon_plan = solve_pddl('action pddl 2/domain.pddl', 'action pddl/problem.pddl')
 
     if not actioon_plan:
         # 如果没有解，尝试第二个
@@ -1010,7 +1010,7 @@ def solve_plan_with_fallback(task: str) -> dict:
     if not actioon_plan:
         print("try default")
         return {
-            "text": f"get {task}",
+            "text": f"dig_down",
             "type": "mine",
             "object_item": None
         }
@@ -1030,6 +1030,140 @@ def map_action_name(action_name: str) -> str:
         "equip_wooden_pickaxe": "equip wooden pickaxe"
     }
     return name_map.get(action_name, action_name)
+
+def get_domain_from_llm(folder: str, model_client, max_retries: int = 3) -> str:
+    os.makedirs(folder, exist_ok=True)
+    domain_file_path = os.path.join(folder, "domain.pddl")
+
+    # Short example snippet (avoid providing the entire domain to prevent verbatim copying)
+    example_snippet = """(:action chop_down_the_tree
+  :parameters ()
+  :precondition (and)
+  :effect (and (increase (count minecraft_logs) 1))
+)"""
+
+    partial_domain_example = f"""
+(define (domain minecraft-domain)
+ (:requirements :strips :typing :numeric-fluents)
+ (:types item)
+ (:predicates (equipped ?tool - item))
+ (:functions (count ?item - item) (agent_height))
+
+ ;; Example snippet (not the full domain):
+ {example_snippet}
+ ...
+)""".strip()
+
+    # Skill mapping as JSON (for reference)
+    skill_list_json = json.dumps(TASK_SKILLS_MAP, indent=2)
+
+    # --- Updated prompt in English ---
+    prompt = f"""
+Your task is to produce a complete and valid PDDL domain for Minecraft-like actions. 
+Follow these strict rules:
+
+1. **File structure**: It must start with 
+   (define (domain minecraft-domain)
+   and contain:
+   - (:requirements :strips :typing :numeric-fluents)
+   - (:types item)
+   - (:predicates (equipped ?tool - item))
+   - (:functions (count ?item - item) (agent_height))
+
+2. **Action definitions**: 
+   You must define 8 actions, logically matching these skill names:
+      - break iron blocks
+      - break iron_ore blocks
+      - break the stone blocks and mine iron ore
+      - chop down the tree
+      - dig down
+      - equip iron axe to chop down the tree
+      - equip stone pickaxe
+      - equip wooden_pickaxe
+
+   The action names can differ slightly (e.g. break_iron_blocks vs. break-iron-blocks), 
+   but they must clearly correspond to the above skills in logic.
+
+3. **Preconditions and effects**:
+   - *break iron blocks* and *break iron_ore blocks*: Must require having a stone pickaxe, 
+     must also require agent_height <= 30, and must produce minecraft_iron_ore.
+   - *break the stone blocks and mine iron ore*: Similar to breaking iron ore, 
+     requires a stone pickaxe, agent_height <= 30, and produces minecraft_iron_ore.
+   - *chop down the tree*: Has no special precondition (just (and)) or optionally 
+     any axe, and produces minecraft_logs.
+   - *dig down*: Must have either a wooden or stone pickaxe, must have agent_height > 30, 
+     and effects should include producing minecraft_cobblestone, producing minecraft_iron_ore, 
+     and reducing agent_height by some numeric (e.g. (decrease (agent_height) 5)).
+   - *equip iron axe to chop down the tree*: Must have a precondition indicating 
+     you have at least one iron axe in your count, e.g. (<= 1 (count minecraft_iron_axe)), 
+     and effect should equip minecraft_iron_axe.
+   - *equip stone pickaxe* and *equip wooden_pickaxe*: Similar logic; 
+     if you want to equip stone pickaxe, you must have (<= 1 (count minecraft_stone_pickaxe)) 
+     in precondition, and effect is (equipped minecraft_stone_pickaxe), etc.
+
+4. **Naming**:
+   - Every item in preconditions or effects should begin with 'minecraft_', e.g. 
+     (equipped minecraft_stone_pickaxe).
+   - The final domain must be syntactically valid. 
+   - Avoid extra commentary, code fences, or any format other than the PDDL text.
+
+For reference, here is a small partial example (NOT the full domain):
+{partial_domain_example}
+
+Skill mapping information:
+{skill_list_json}
+
+Now, please return **only** the complete domain.pddl text (no code blocks, no explanations). 
+Make sure it meets the numeric preconditions (<= or > for agent_height), 
+produces the right items (minecraft_logs, minecraft_iron_ore, minecraft_cobblestone), 
+and uses the correct structure for equipping items.
+
+If you cannot satisfy the above requirements on the first try, try to correct your domain 
+until it meets all points. Remember: do not copy verbatim from the example; 
+the domain must be original but logically equivalent.
+"""
+
+    domain_text = ""
+    error_reason = None
+
+    for attempt in range(max_retries):
+        if error_reason:
+            full_prompt = (
+                    prompt
+                    + f"\n[Error in attempt {attempt}: {error_reason}]\nPlease fix any issues and try again."
+            )
+        else:
+            full_prompt = prompt
+
+        raw_output, TOKEN_USAGE = model_client.ask(full_prompt)
+        raw_output = raw_output.strip()
+
+        # Quick checks: must start with (define (domain...) and contain "(:action"
+        if not raw_output.startswith("(define (domain"):
+            error_reason = "Domain must start with (define (domain..."
+            continue
+        if "(:action " not in raw_output:
+            error_reason = "No (:action) definitions found"
+            continue
+
+        # Passed checks
+        domain_text = raw_output
+        break
+
+    # If no valid domain after retries, write an empty template.
+    if not domain_text:
+        domain_text = """(define (domain minecraft-domain)
+ (:requirements :strips :typing :numeric-fluents)
+ (:types item)
+ (:predicates (equipped ?tool - item))
+ (:functions (count ?item - item) (agent_height))
+)
+"""
+
+    with open(domain_file_path, "w", encoding="utf-8") as f:
+        f.write(domain_text)
+
+    return domain_file_path, TOKEN_USAGE
 
 class JARVIS:
     def __init__(self, model = 'gpt-3.5-turbo'):

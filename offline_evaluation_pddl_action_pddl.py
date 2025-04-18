@@ -4,7 +4,7 @@ from jarvis.assembly.env import RecordWrapper, RenderWrapper, build_env_yaml
 from jarvis.assembly.base import skills
 from jarvis.assembly.evaluate import monitor_function
 from jarvis.assembly.base import jarvis_tasks, get_task_config, memory
-from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP,solve_plan_with_fallback,map_action_name
+from jarvis.assembly.core import get_skill, get_plan, detect_item_dependencies, check_items,generate_domain_pddl_all_skills,gen_problem_pddl,parse_plan_actions,solve_pddl,get_skill_definitions,RealLLMClient,TASK_SKILLS_MAP,solve_plan_with_fallback,map_action_name,get_domain_from_llm
 
 
 import random
@@ -106,7 +106,6 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
 
     task_obj = task_dict['task_obj']
     plan = task_dict['plan']
-
     mark.current_plan = plan
 
     rprint(r"[bold blue][INFO]: Current task: [/bold blue]", task_dict['task'])
@@ -122,7 +121,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
         mark.record_goals[len(mark.record_infos)] = subgoal
 
         goal_obj_ret, goal_obj_info = monitor_function(obj=subgoal['goal'], info=mark.record_infos[-1])
-        max_subgoal_attempts = 10
+        max_subgoal_attempts = 20
         attempt_count = 0
 
         while not goal_obj_ret and attempt_count < max_subgoal_attempts:
@@ -217,7 +216,7 @@ if __name__ == '__main__':
     ############# Newly add args #################
     parser.add_argument(
         "--tasks_list", type=list,
-        default=["iron_pickaxe"],
+        default=["crafting_table", "wooden_pickaxe","stone_pickaxe", "iron_pickaxe"],
         help="evaluation tasks_name list"
     )
     parser.add_argument(
@@ -238,19 +237,12 @@ if __name__ == '__main__':
     task_yamls = os.listdir(ENV_CONFIG_DIR)
 
     # eval for list of task
-    output_file = f"lby/eval_{args.llm_type}_pddlact.txt"
+    output_file = f"lby/eval_{args.llm_type}_pddlact_pddl.txt"
     file_exists = os.path.exists(output_file) and os.path.getsize(output_file) > 0
     model_client = RealLLMClient(args.llm_type)
-    skill_preconds, skill_custom_rules, skill_effect_items, token_usage = get_skill_definitions(
-        TASK_SKILLS_MAP, model_client
-    )
-    folder_name = "action pddl"
-    domain_file = generate_domain_pddl_all_skills(
-        folder_name,
-        skill_preconds,
-        skill_custom_rules,
-        skill_effect_items
-    )
+    folder_name = "action pddl 2"
+    domain_path,token_usage = get_domain_from_llm(folder_name, model_client)
+    print("Domain PDDL saved to:", domain_path)
     with open(output_file, 'a') as f_out:
         if not file_exists:
             f_out.write(
