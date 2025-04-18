@@ -14,7 +14,7 @@
 
  (:action break_iron_ore_blocks
   :parameters ()
-  :precondition (and (or (equipped minecraft_wooden_pickaxe) (equipped minecraft_stone_pickaxe)))
+  :precondition (and (or (equipped minecraft_stone_pickaxe) (equipped minecraft_iron_pickaxe)))
   :effect (and (increase (count minecraft_iron_ore) 1))
  )
 
@@ -28,14 +28,14 @@
 
  (:action chop_down_the_tree
   :parameters ()
-  :precondition (and (or (equipped minecraft_wooden_axe) (equipped minecraft_stone_axe) (equipped minecraft_iron_axe)))
+  :precondition (and)
   :effect (and (increase (count minecraft_logs) 1))
  )
 
 
  (:action dig_down
   :parameters ()
-  :precondition (and (and (or (equipped minecraft_wooden_pickaxe) (equipped minecraft_stone_pickaxe)) (> (agent_height) 15)))
+  :precondition (and (or (equipped minecraft_wooden_pickaxe) (equipped minecraft_stone_pickaxe)) (> (agent_height) 15))
   :effect (and (increase (count minecraft_cobblestone) 1) (increase (count minecraft_iron_ore) 1) (decrease (agent_height) 5))
  )
 
