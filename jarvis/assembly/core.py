@@ -301,7 +301,7 @@ def evaluate_plan(plan, addition_info="", llm_model="gpt-3.5-turbo"):
 
     print(response.choices[0].message.content)
     insights, eval_type = parse_evaluation_text(response.choices[0].message.content)
-    return insights, eval_type
+    return insights, eval_type, response.usage
 
 # choosing actions
 def parse_action_text(text):
