@@ -84,7 +84,7 @@ def evaluate_task(env, mark, task_dict, llm_model="gpt-3.5-turbo"):
     # plan, token_usage = get_plan(seq_task, info=mark.record_infos[-1], recipes_data=recipes_data, llm_model=llm_model)
     print("++++++",list(task_dict['task_obj'].keys())[0])
     plan, token_usage = get_plan_pddl_quantity(list(task_dict['task_obj'].keys())[0], llm_type = "qwen-max", max_eval = 3)
-    TOKEN_RECORD.extend(("plan", token_usage))
+    TOKEN_RECORD.extend(token_usage)
 
     task_dict['plan'] = plan
     mark.current_task = task_dict
