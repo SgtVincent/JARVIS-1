@@ -1,0 +1,6 @@
+task name	env_index	biome	seed	result	result_msg	plan_prompt	plan_completion	plan_total	skill_prompt	skill_completion	skill_total
+iron_pickaxe	26	plains	3764708389372876529	False	subgoal_failed	567	556	1123	567	556	1123
+iron_pickaxe	20	plains	1141999397725833968	False	subgoal_failed	764	283	1047	567	556	1123
+iron_pickaxe	27	plains	6247793375806408930	False	subgoal_failed	764	421	1185	567	556	1123
+iron_pickaxe	10	forest	6263789223434352367	False	subgoal_failed	764	375	1139	567	567	1134
+iron_pickaxe	13	forest	8496160286458255438	False	subgoal_failed	764	283	1047	567	567	1134
