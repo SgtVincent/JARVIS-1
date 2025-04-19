@@ -1337,11 +1337,10 @@ def get_plan_pddl_quantity(obj_name, llm_type, max_eval, if_rule_based=False):
     plan = get_pddl_plan(obj_name)
 
     if if_rule_based:
+        plan_buff = [plan]
         if obj_name == "stone_pickaxe":
-            plan_buff = [plan]
             plan_buff.append(get_pddl_plan("wooden_pickaxe"))
         elif obj_name == "iron_pickaxe":
-            plan_buff = [plan]
             plan_buff.append(get_pddl_plan("wooden_pickaxe"))
             if random.random() < 0.7:
                 plan_buff.append(get_pddl_plan("stone_pickaxe"))
