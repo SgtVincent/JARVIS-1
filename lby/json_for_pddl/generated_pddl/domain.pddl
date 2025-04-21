@@ -2,7 +2,7 @@
  (:requirements :strips :typing :numeric-fluents)
  (:types item)
  (:constants
-   minecraft_planks minecraft_crafting_table minecraft_logs minecraft_stick minecraft_wooden_pickaxe - item
+   minecraft_logs minecraft_stick minecraft_planks minecraft_crafting_table minecraft_wooden_pickaxe - item
  )
  (:functions (count ?item - item))
  (:action collect__logs
